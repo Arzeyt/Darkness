@@ -12,7 +12,7 @@ public class DarknessTab extends CreativeTabs{
 
 	@Override
 	public Item getTabIconItem() {
-		return Darkness.effectItem;
+		return Item.getItemFromBlock(Darkness.towerBlock);
 	}
 
 }

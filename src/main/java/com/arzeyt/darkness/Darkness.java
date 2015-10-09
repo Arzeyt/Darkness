@@ -1,5 +1,21 @@
 package com.arzeyt.darkness;
 
+import com.arzeyt.darkness.effectObject.EffectBlock;
+import com.arzeyt.darkness.effectObject.EffectItem;
+import com.arzeyt.darkness.effectObject.EffectMessageToClient;
+import com.arzeyt.darkness.effectObject.EffectMessageToServer;
+import com.arzeyt.darkness.effectObject.EffectTileEntity;
+import com.arzeyt.darkness.effectObject.EffectMessageHandlerOnClient;
+import com.arzeyt.darkness.effectObject.EffectMessageHandlerOnServer;
+import com.arzeyt.darkness.towerObject.DetonationMessageHandlerOnClient;
+import com.arzeyt.darkness.towerObject.DetonationMessageToClient;
+import com.arzeyt.darkness.towerObject.LightOrb;
+import com.arzeyt.darkness.towerObject.LightOrbBlock;
+import com.arzeyt.darkness.towerObject.TowerBlock;
+import com.arzeyt.darkness.towerObject.TowerMessageHandlerOnClient;
+import com.arzeyt.darkness.towerObject.TowerMessageToClient;
+import com.arzeyt.darkness.towerObject.TowerTileEntity;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderItem;
@@ -7,13 +23,19 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 
 @Mod(modid = Darkness.MODID, version = Darkness.VERSION)
@@ -23,14 +45,34 @@ public class Darkness {
     
     //blocks
     public static Block effectBlock;
+    public static Block towerBlock;
+    public static Block lightOrbBlock;
     
     //items
     public static Item effectItem;
+    public static Item lightOrb;
+   
+    
+    //network 
+    public static SimpleNetworkWrapper simpleNetworkWrapper;
+    
+    	//network variables
+    	public static final byte ID_MESSAGE_CTOS = 10;
+    	public static final byte EFFECTID_MESSAGE_STOC = 11;
+    	public static final byte TOWER_MESSAGE_STOC = 12;
+    	public static final byte DETONATION_MESSAGE_STOC = 13;
         
     //other stuff
-    public final boolean debugMode=true;
+    public final static boolean debugMode=false;
+    public static DarkLists darkLists;
+    public static ClientLists clientLists;
+    public static Reference reference;
     
     public static final DarknessTab darknessTab = new DarknessTab("tabDarkness");
+    
+    //render
+    private static StatusBarRenderer statusBarRenderer;
+    
     
     @EventHandler 
     public void preInit(FMLPreInitializationEvent e){
@@ -43,16 +85,36 @@ public class Darkness {
     		//tile entities
     		GameRegistry.registerTileEntity(EffectTileEntity.class, "darknessEffectTile");
     	}
-    
+    	//blocks
+    		towerBlock = new TowerBlock();
+    		lightOrbBlock = new LightOrbBlock();
     	
+    	//items
+    		lightOrb = new LightOrb();
+    		
+    	//tile entities
+    		GameRegistry.registerTileEntity(TowerTileEntity.class, "towerTileEntity");
+    	
+    	//network
+	    	simpleNetworkWrapper = NetworkRegistry.INSTANCE.newSimpleChannel("DarknessChannel");
+	    	simpleNetworkWrapper.registerMessage(EffectMessageHandlerOnServer.class, EffectMessageToServer.class, ID_MESSAGE_CTOS, Side.SERVER);
+	    	
+	    	if(e.getSide()==Side.CLIENT){
+	    		simpleNetworkWrapper.registerMessage(EffectMessageHandlerOnClient.class, EffectMessageToClient.class, EFFECTID_MESSAGE_STOC, Side.CLIENT);
+	    		simpleNetworkWrapper.registerMessage(TowerMessageHandlerOnClient.class, TowerMessageToClient.class, TOWER_MESSAGE_STOC, Side.CLIENT);
+	    		simpleNetworkWrapper.registerMessage(DetonationMessageHandlerOnClient.class, DetonationMessageToClient.class, DETONATION_MESSAGE_STOC, Side.CLIENT);
+	    	}
+	    	
+    	//classes
+	    	darkLists=new DarkLists();
+		 	    	
     }
     
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
-    	//register renders
-    	if(event.getSide() == Side.CLIENT)
-    	{
+    	
+    	if(event.getSide() == Side.CLIENT){ //client side stuff
 	    	RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
 	    
 	    	if(debugMode==true){
@@ -61,14 +123,33 @@ public class Darkness {
 		    	//items
 		    	renderItem.getItemModelMesher().register(effectItem, 0, new ModelResourceLocation(Darkness.MODID + ":" + ((EffectItem)effectItem).getName(), "inventory"));
 	    	}
+	    	//blocks
+		    	renderItem.getItemModelMesher().register(Item.getItemFromBlock(towerBlock), 0, new ModelResourceLocation(Darkness.MODID + ":" + ((TowerBlock) towerBlock).getName(), "inventory"));
+		    	renderItem.getItemModelMesher().register(Item.getItemFromBlock(lightOrbBlock), 0, new ModelResourceLocation(Darkness.MODID + ":" + ((LightOrbBlock) lightOrbBlock).getName(), "inventory"));
+	
+	    	//items
+		    	renderItem.getItemModelMesher().register(lightOrb, 0, new ModelResourceLocation(Darkness.MODID + ":" + ((LightOrb)lightOrb).getName(), "inventory"));
+	
+	    	//Events
+		    	FMLCommonHandler.instance().bus().register(new ClientEffectTick());
+
+	    	//classes
+		    	this.clientLists=new ClientLists();
     	}
+    	
+    	//Events
+    	FMLCommonHandler.instance().bus().register(new DarkDeterminerServerTick());
+    	MinecraftForge.EVENT_BUS.register(new DarkEventHandler());
     }
     
     @EventHandler
     public void init(FMLPostInitializationEvent event)
     {
-		
-    	
+    	//overlay
+    	if(event.getSide()== Side.CLIENT){
+    		statusBarRenderer = new StatusBarRenderer(Minecraft.getMinecraft());
+    		MinecraftForge.EVENT_BUS.register(new OverlayEventHandler(statusBarRenderer));
+    	}
     }
 }
 
