@@ -1,4 +1,4 @@
-package com.arzeyt.darkness.towerObject;
+package com.arzeyt.darkness.lightOrb;
 
 import com.arzeyt.darkness.Darkness;
 

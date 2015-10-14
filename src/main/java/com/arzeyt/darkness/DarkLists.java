@@ -2,15 +2,20 @@ package com.arzeyt.darkness;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
-import com.arzeyt.darkness.towerObject.LightOrb;
+import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.BlockPos;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.util.Constants.NBT;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -187,6 +192,38 @@ public class DarkLists {
 			}
 		}
 		return distance;
+	}
+	
+	public ItemStack getActualOrbFromID(int ID){
+		Iterator i = MinecraftServer.getServer().getConfigurationManager().playerEntityList.iterator();
+		while(i.hasNext()){
+			EntityPlayerMP p = (EntityPlayerMP)i.next();
+			for(ItemStack stack : p.inventory.mainInventory){
+				if(stack!=null && stack.hasTagCompound() && stack.getItem() instanceof LightOrb){
+					NBTTagCompound nbt = stack.getTagCompound().getCompoundTag("darkness");
+					if(nbt.getInteger(Reference.ID)==ID){
+						return stack;
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
+	public EntityPlayer getPlayerHoldingOrb(int ID){
+		Iterator i = MinecraftServer.getServer().getConfigurationManager().playerEntityList.iterator();
+		while(i.hasNext()){
+			EntityPlayerMP p = (EntityPlayerMP)i.next();
+			for(ItemStack stack : p.inventory.mainInventory){
+				if(stack!=null && stack.hasTagCompound() && stack.getItem() instanceof LightOrb){
+					NBTTagCompound nbt = stack.getTagCompound().getCompoundTag("darkness");
+					if(nbt.getInteger(Reference.ID)==ID){
+						return p;
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
 }

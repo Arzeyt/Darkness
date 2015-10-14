@@ -1,4 +1,4 @@
-package com.arzeyt.darkness.towerObject;
+package com.arzeyt.darkness.lightOrb;
 
 import java.util.List;
 
@@ -33,6 +33,7 @@ public class LightOrb extends Item {
 		setCreativeTab(Darkness.darknessTab);
 		setMaxStackSize(1);
 		this.dissipationCounter=(int) (DISSIPATION_TICKS/UPDATE_RATE);
+		this.setMaxDamage(100);
 	}
 	
 	public String getName(){
@@ -43,21 +44,45 @@ public class LightOrb extends Item {
 	public void onUpdate(ItemStack stack, World worldIn, Entity entityIn,
 			int itemSlot, boolean isSelected) {
 			
+		if(stack.stackSize==0){
+			EntityPlayer p = (EntityPlayer)entityIn;
+			p.inventory.setInventorySlotContents(itemSlot, null);
+		}
+		int power = getPowerFromNBT(stack);
+		if(getPowerFromNBT(stack)!=0){
+			this.setDamage(stack, 100-power);
+		}
 		super.onUpdate(stack, worldIn, entityIn, itemSlot, isSelected);
+		
 	}
 	
 	@Override
 	@SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, EntityPlayer playerIn,
 			List tooltip, boolean advanced) {
-	
+
+			
 			if(stack.getTagCompound() != null){
 				if(stack.getTagCompound().hasKey("darkness")){
+					
 					NBTTagCompound nbt = (NBTTagCompound) stack.getTagCompound().getTag("darkness");
+					
 					tooltip.add("id: "+nbt.getInteger(Reference.ID));
 					tooltip.add("power: "+nbt.getInteger(Reference.POWER));
 					tooltip.add("dissipation percent: "+nbt.getInteger(Reference.DISSIPATION_PERCENT));
-					stack.setStackDisplayName(EnumChatFormatting.GOLD+"lightOrb");
+					
+					Reference r = Darkness.reference;
+					int power = nbt.getInteger(r.POWER);
+					
+					if(power<10){
+						stack.setStackDisplayName(EnumChatFormatting.DARK_RED+"Dying Light Orb");
+					}else if(power<25){
+						stack.setStackDisplayName(EnumChatFormatting.RED+"Faint Light Orb");
+					}else if(power<50){
+						stack.setStackDisplayName(EnumChatFormatting.GRAY+"Diminished Light Orb");
+					}else if(power<=100){
+						stack.setStackDisplayName(EnumChatFormatting.GOLD+"Light Orb");
+					}
 				}
 			}
 			
@@ -74,7 +99,11 @@ public class LightOrb extends Item {
 	}
 
 	public int getPowerFromNBT(ItemStack stack){
-		return stack.getTagCompound().getCompoundTag("darkness").getInteger("power");
+		int power = 0;
+		if(stack.hasTagCompound()){
+			power = stack.getTagCompound().getCompoundTag("darkness").getInteger(Reference.POWER);
+		}
+		return power;
 	}
 	
 	/**
@@ -103,6 +132,7 @@ public class LightOrb extends Item {
 	@Override
 	public ItemStack onItemRightClick(ItemStack itemStackIn, World worldIn,
 			EntityPlayer playerIn) {
+		
 		Reference r = new Reference();
 		NBTTagCompound nbt = (NBTTagCompound) itemStackIn.getTagCompound().getCompoundTag("darkness");
 		System.out.println("ID: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" DissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));

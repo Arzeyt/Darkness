@@ -3,6 +3,8 @@ package com.arzeyt.darkness.towerObject;
 import java.awt.image.TileObserver;
 
 import com.arzeyt.darkness.Darkness;
+import com.arzeyt.darkness.Reference;
+import com.arzeyt.darkness.lightOrb.LightOrb;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.ITileEntityProvider;
@@ -70,16 +72,16 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 			
 			if(!te.isInvalid()){
 				if(playerIn.getHeldItem()!=null){
-					String heldItemName = playerIn.getHeldItem().getItem().getUnlocalizedName();
-					String lightOrbName = Darkness.lightOrb.getUnlocalizedName();
 					
-					if(heldItemName.equals(lightOrbName)){ //player is holding a light orb
+					if(playerIn.getHeldItem().getItem() instanceof LightOrb){ //player is holding a light orb
 						ItemStack orb = playerIn.getHeldItem();
 						if(orb.getTagCompound().hasKey("darkness")){ //has darkness data
 							NBTTagCompound nbt = orb.getTagCompound().getCompoundTag("darkness");
-							int orbPower = nbt.getInteger("orbPower");
+							int orbPower = nbt.getInteger(Reference.POWER);
 							te.setPower(orbPower);							
-							playerIn.inventory.consumeInventoryItem(Item.getItemFromBlock(Darkness.lightOrbBlock));
+							orb.stackSize--;
+							Darkness.darkLists.removeLightOrb(orb);
+							System.out.println("set tower power to: "+te.getPower());
 						}else{ //this should never happen
 							System.out.println("no data in orb");
 						}
@@ -91,9 +93,10 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 					te.takeOrb(playerIn);
 				}
 			}
-			worldIn.spawnParticle(EnumParticleTypes.EXPLOSION_HUGE, hitX, hitY, hitZ, 0, 1.0D, 0);
 			
 		}
+		worldIn.spawnParticle(EnumParticleTypes.EXPLOSION_HUGE, hitX, hitY, hitZ, 0, 1.0D, 0);
+
 	return true;
 	}
 	

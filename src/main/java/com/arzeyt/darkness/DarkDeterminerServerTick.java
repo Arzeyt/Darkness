@@ -2,11 +2,13 @@ package com.arzeyt.darkness;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.UUID;
 
-import com.arzeyt.darkness.towerObject.DetonationMessageToClient;
-import com.arzeyt.darkness.towerObject.LightOrb;
+import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
+import com.arzeyt.darkness.lightOrb.LightOrb;
+import com.arzeyt.darkness.lightOrb.OrbUpdateMessageToClient;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
 import net.minecraft.client.Minecraft;
@@ -102,12 +104,15 @@ public class DarkDeterminerServerTick {
 		if(counter%ORB_DEPLETION_RATE==0
 				&&Darkness.darkLists.getLightOrbs().isEmpty()==false){
 			System.out.println("orbs in list: "+Darkness.darkLists.getLightOrbs());
+			HashSet<ItemStack> removalOrbs = new HashSet<ItemStack>();
+			
 			for(ItemStack orb : Darkness.darkLists.getLightOrbs()){
 				if(orb.hasTagCompound()==false){
 					System.out.println("Orb doesn't have TAG! D:");
 				}else{
 					NBTTagCompound nbt = (NBTTagCompound) orb.getTagCompound().getTag("darkness");
 					
+					int id = nbt.getInteger(r.ID);
 					int dissipationPercent = nbt.getInteger(r.DISSIPATION_PERCENT);
 					int initialPower = nbt.getInteger(r.INITAL_POWER);
 					int power = nbt.getInteger(r.POWER);
@@ -116,31 +121,58 @@ public class DarkDeterminerServerTick {
 					dissipationPercent++;
 					power = initialPower-dissipationPercent;
 					
+					if(power<1){
+						ItemStack pOrb = Darkness.darkLists.getActualOrbFromID(id);
+						if(pOrb==null){
+							System.out.println("player orb cannot be found!");
+						}else{
+							pOrb.stackSize--;
+							removalOrbs.add(orb);
+							System.out.println("removed orb");
+						}
+					}
+					
 					nbt.setInteger(r.POWER, power);
 					nbt.setInteger(r.DISSIPATION_PERCENT, dissipationPercent);
 					
 					System.out.println("Power: "+power+" dissipationPercent: "+dissipationPercent);
 					System.out.println("nbt data says id: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" dissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));
+					
+					//per player basis... map needs to include orb owner
+					System.out.println("sending orb update message");
+					Darkness.simpleNetworkWrapper.sendToAll(new OrbUpdateMessageToClient(id, power, dissipationPercent));
 				}
+			}
+			for(ItemStack deadOrb : removalOrbs){
+				Darkness.darkLists.removeLightOrb(deadOrb);
 			}
 		}
 	}
 	
+	//consider making a detonation object...
 	@SubscribeEvent
 	public void detonationDepletion(ServerTickEvent e){
 		if(Darkness.darkLists.getOrbDetonations().isEmpty()==false){
-			HashMap <BlockPos, Integer> map = Darkness.darkLists.getOrbDetonations();
-			for(BlockPos p : map.keySet()){
-				System.out.println("lifetime: "+map.get(p));
-				if(map.get(p)<=0){//lifetime expired, so remove position, and send remove to client
-					Darkness.darkLists.removeOrbDetonation(p);
+			HashMap <BlockPos, Integer> detonations = Darkness.darkLists.getOrbDetonations();
+			HashMap<BlockPos, Integer> removal = new HashMap<BlockPos, Integer>();
+			HashMap<BlockPos, Integer> modify = new HashMap<BlockPos, Integer>();
+			
+			for(BlockPos p : detonations.keySet()){
+				if(detonations.get(p)<=0){//lifetime expired, so remove position, and send remove to client
+					removal.put(p, detonations.get(p));
 					Darkness.simpleNetworkWrapper.sendToAll(new DetonationMessageToClient(false, p.getX(), p.getY(), p.getZ()));
 					System.out.println("sent orb remove message");
 				}else{
-					int lifetime=map.get(p);
-					Darkness.darkLists.removeOrbDetonation(p);
-					Darkness.darkLists.addOrbDetonation(p,lifetime--);
+					modify.put(p, detonations.get(p));
 				}
+			}
+			for(BlockPos p : removal.keySet()){
+				Darkness.darkLists.removeOrbDetonation(p);
+			}
+			for(BlockPos p : modify.keySet()){
+				int lifetime=modify.get(p);
+				Darkness.darkLists.removeOrbDetonation(p);
+				Darkness.darkLists.addOrbDetonation(p,lifetime-1);
 			}
 		}
 	}

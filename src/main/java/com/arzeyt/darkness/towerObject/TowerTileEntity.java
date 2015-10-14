@@ -3,7 +3,9 @@ package com.arzeyt.darkness.towerObject;
 import java.util.Random;
 
 import com.arzeyt.darkness.Darkness;
+import com.arzeyt.darkness.Reference;
 
+import net.minecraft.block.BlockAir;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -11,7 +13,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.gui.IUpdatePlayerListBox;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
 public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
@@ -20,7 +24,9 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	public final int SYNC_DISTANCE = 50;
 	private int counter = 0;
 	private int syncRate = 20*3;
-	private int nearbyPlayerSyncRate = 20*200;
+	private int nearbyPlayerSyncRate = 20*500;
+	private int towerDepletionRate = 12000/100;
+	private int towerChargeRate = 6000/100;
 	private int particleProductionRate = 3;
 	private final int TAKE_ORB_COOLDOWN=200; 
 		private int noonLowerEnd=6000-(TAKE_ORB_COOLDOWN/2);
@@ -36,7 +42,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	//variables
 	private boolean powered = false;
 	private boolean loaded = false;
-	private int orbPower = 0;
+	private int power = 0;
 	private long minecraftTime =0;
 	private boolean takingOrbAtNoon=false;
 
@@ -61,7 +67,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 					&& worldObj.isRemote==false){
 				
 				System.out.println("player is nearby");
-				updateClient();
+				//updateClient();
 			}
 			
 			//for initial loading
@@ -76,37 +82,71 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				updateClient();
 			}
 			//orbPower time cycle, limited by sync rate. Also sets server time
+			minecraftTime=worldObj.getWorldTime();
+			long timeOfDay = minecraftTime%24000;
+			
 			if(counter%syncRate==0){	
-				minecraftTime=worldObj.getWorldTime();
-				long moduloTime = minecraftTime%24000;
-				
-				if(noonLowerEnd<moduloTime && moduloTime < noonHigherEnd
+				/**if(noonLowerEnd<timeOfDay 
+						&& timeOfDay < noonHigherEnd
 						&& takingOrbAtNoon==false){
 					System.out.println("minecraft time: "+minecraftTime);
 					setPower(100);
-				}
+				}**/
 			}
+			if(counter%towerDepletionRate==0
+					&& timeOfDay < 24000 
+					&& 12000<timeOfDay 
+					&& power>0){
+				System.out.println("decrementing power");
+					setPower(power-1);
+			}
+			if(counter%towerChargeRate==0
+					&& timeOfDay<12000
+					&& 0<timeOfDay
+					&& power<100){
+				System.out.println("incrementing power");
+				setPower(power+1);
+				System.out.println("power = "+power);
+			}
+			
 			//take orb cooldown increment. stop when reach 0
+			/**
 			if(takeOrbAtNoonCooldownCounter>0){
 				takeOrbAtNoonCooldownCounter--;
 			}else if(takeOrbAtNoonCooldownCounter==0){
 				takingOrbAtNoon=false;
 			}
+			**/
 			
 		}
 		if(worldObj.isRemote==true){//clientside
+			
 			//effect
-			if(powered && counter%particleProductionRate==0){
+			double adjustedParticleProductionRate = getPower() > 1 ? particleProductionRate*100/getPower() : particleProductionRate*100;
+			if(getPower()>0 && counter%adjustedParticleProductionRate==0){
 				Random rand = new Random();
-				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5, pos.getY(), pos.getZ()+.5, 0.0D, 1.0D, 0.0D);
+				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5, pos.getY()+2, pos.getZ()+.5, -0.5D+rand.nextDouble(), 1.0D, -0.5D+rand.nextDouble());
 			}
+			if(getPower()>0){
+				Reference r = Darkness.reference;
+				double adjustedTowerRadius = (double)r.TOWER_RADIUS/100*(double)power;
+				if(adjustedTowerRadius<1){
+					adjustedTowerRadius=1;
+				}
+				Random rand = new Random();
+				double randX = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
+				double randY = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
+				double randZ = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
+				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5+randX, rand.nextInt(256), pos.getZ()+randZ+.5, 0.0D, 0.1D, 0.0D);
+			}
+		
 		}
 		
 		
 		//increment counters
 		minecraftTime=worldObj.getWorldTime();
 		counter++;
-		if(counter>123456){ //just so we dont get huge numbers
+		if(counter>Integer.MAX_VALUE-20){ //just so we dont get huge numbers
 			counter=0;
 		}
 	}
@@ -117,6 +157,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 			Darkness.simpleNetworkWrapper.sendToAll(new TowerMessageToClient(getPower(), pos.getX(), pos.getY(), pos.getZ()));
 		}
 	}
+	
 	
 	@Override
 	public void readFromNBT(NBTTagCompound compound) {
@@ -147,7 +188,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	}
 	
 	public int getPower(){
-		return orbPower;
+		return this.power;
 	}
 	
 	/**
@@ -155,15 +196,12 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	 * @param orbPower Values between 0 to 100 ONLY
 	 * @Description sets tower power and adjusts all varaibles accordingly. 
 	 */
-	public void setPower(int orbPower){
-		this.orbPower=orbPower;
-		if(orbPower>0){
+	public void setPower(int power){
+		this.power=power;
+		if(power>0){
 			this.powered=true;
-			if(Darkness.darkLists.getPoweredTowers().isEmpty()){
-				Darkness.darkLists.addPoweredTowers(this);
-			}
-			if(Darkness.darkLists.getPoweredTowers().isEmpty()==false
-					&& Darkness.darkLists.getPoweredTowers().contains(this)==false){
+			if(Darkness.darkLists.getPoweredTowers().isEmpty() 
+					|| (Darkness.darkLists.getPoweredTowers().isEmpty()==false && Darkness.darkLists.getPoweredTowers().contains(this))){
 				Darkness.darkLists.addPoweredTowers(this);
 			}
 		}else{
@@ -181,12 +219,14 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	 * @return true if worked, false if didn't
 	 */
 	public boolean takeOrb(EntityPlayer p){
+		/**
 		if(noonLowerEnd<minecraftTime && minecraftTime<noonHigherEnd){
 			if(takingOrbAtNoon==false){
 				this.takingOrbAtNoon=true;//activate taking orb. automatically deactivated in update()
 				this.takeOrbAtNoonCooldownCounter=TAKE_ORB_COOLDOWN;//reset the cooldown
 				
-				p.inventory.addItemStackToInventory(generateLightOrb());
+				ItemStack newOrb = generateLightOrb(p);
+				p.inventory.addItemStackToInventory(newOrb);
 				setPower(0);
 				System.out.println("took orb");
 				return true;
@@ -194,11 +234,13 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				System.out.println("wait for cooldown in: "+takeOrbAtNoonCooldownCounter+" ticks");
 				return false;
 			}
-		}else if(getPower()==0){
+		}**/
+		if(getPower()==0){
 			System.out.println("power too low to take orb");
 			return false;
 		}else{
-			p.inventory.addItemStackToInventory(generateLightOrb());
+			ItemStack newOrb = generateLightOrb(p);
+			p.inventory.addItemStackToInventory(newOrb);
 			setPower(0);
 			System.out.println("took orb");
 			return true;
@@ -209,14 +251,14 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	 * @Warning Does not handle decrementing tower power
 	 * @return An itemStack of 1 light orb with appropriate nbt data. Also adds light orb to light orb list
 	 */
-	public ItemStack generateLightOrb(){
+	public ItemStack generateLightOrb(EntityPlayer p){
 		Random rand = new Random();
 		ItemStack lightOrb = new ItemStack(Darkness.lightOrb);
 		NBTTagCompound compound = new NBTTagCompound();
 		NBTTagCompound nbt = new NBTTagCompound();
-			nbt.setInteger("power", this.getPower());
-			nbt.setInteger("initalPower", this.getPower());
-			nbt.setInteger("id", rand.nextInt(Integer.MAX_VALUE));
+			nbt.setInteger(Reference.POWER, this.getPower());
+			nbt.setInteger(Reference.INITAL_POWER, this.getPower());
+			nbt.setInteger(Reference.ID, rand.nextInt(Integer.MAX_VALUE));
 		compound.setTag("darkness", nbt);
 		lightOrb.setTagCompound(compound);
 		Darkness.darkLists.addLightOrb(lightOrb);

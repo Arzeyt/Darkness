@@ -1,21 +1,37 @@
 package com.arzeyt.darkness;
 
-import com.arzeyt.darkness.towerObject.DetonationMessageToClient;
-import com.arzeyt.darkness.towerObject.LightOrb;
+import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
+import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.world.BlockEvent.BreakEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent.ItemPickupEvent;
 
 public class DarkEventHandler {
 
-	
+	@SubscribeEvent
+	public void addOrbsFromInventories(EntityJoinWorldEvent e){
+		if(e.entity instanceof EntityPlayer){
+			EntityPlayer p = (EntityPlayer) e.entity;
+			for(ItemStack stack : p.inventory.mainInventory){
+				if(stack!=null 
+						&& stack.hasTagCompound()
+						&& stack.getItem() instanceof LightOrb){
+					Darkness.darkLists.addLightOrb(stack);
+					System.out.println("added light orb to darkList");
+				}
+			}
+		}
+	}
 	@SubscribeEvent
 	public void onBlockBreak(BreakEvent e){
 		if(e.world.getTileEntity(e.pos) instanceof TowerTileEntity){

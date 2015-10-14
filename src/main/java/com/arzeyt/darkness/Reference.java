@@ -6,7 +6,7 @@ public final class Reference {
 	
 	public static final int HELD_ORB_RADIUS=5;
 	public static final int ORB_DETONATION_RAIDUS=10;
-	public static final int ORB_DEPLETETION_RATE = 24000/2/100;//24,000 ticks per day / half a day to depletion / 100 percent
+	public static final int ORB_DEPLETETION_RATE = 6000/100;//24,000 ticks per day / half a day to depletion / 100 percent
 	
 	public static final int DARKNESS_CHECK_RATE = 40*10;//twice the ticks
 	public static final int DETONATION_TICK_RATE = 2;

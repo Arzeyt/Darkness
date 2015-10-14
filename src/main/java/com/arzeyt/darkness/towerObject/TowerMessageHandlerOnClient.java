@@ -40,11 +40,11 @@ public class TowerMessageHandlerOnClient implements IMessageHandler<TowerMessage
 	protected void processMessage(WorldClient worldClient,
 			TowerMessageToClient message) {
 
-		int orbPower = message.getOrbPower();
+		int power = message.power();
 		if(worldClient.getTileEntity(message.getPos()).isInvalid()==false){
 			TowerTileEntity te = (TowerTileEntity) worldClient.getTileEntity(message.getPos());
-			te.setPower(orbPower);
-			System.out.println("Message processed. Set power to: "+orbPower+" and the tile entity now has: "+te.getPower());
+			te.setPower(power);
+			System.out.println("Message processed. Set power to: "+power+" and the tile entity now has: "+te.getPower());
 		}
 	}
 

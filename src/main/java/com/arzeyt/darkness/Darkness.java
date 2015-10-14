@@ -7,10 +7,12 @@ import com.arzeyt.darkness.effectObject.EffectMessageToServer;
 import com.arzeyt.darkness.effectObject.EffectTileEntity;
 import com.arzeyt.darkness.effectObject.EffectMessageHandlerOnClient;
 import com.arzeyt.darkness.effectObject.EffectMessageHandlerOnServer;
-import com.arzeyt.darkness.towerObject.DetonationMessageHandlerOnClient;
-import com.arzeyt.darkness.towerObject.DetonationMessageToClient;
-import com.arzeyt.darkness.towerObject.LightOrb;
-import com.arzeyt.darkness.towerObject.LightOrbBlock;
+import com.arzeyt.darkness.lightOrb.DetonationMessageHandlerOnClient;
+import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
+import com.arzeyt.darkness.lightOrb.LightOrb;
+import com.arzeyt.darkness.lightOrb.LightOrbBlock;
+import com.arzeyt.darkness.lightOrb.OrbUpdateMessageHandlerOnClient;
+import com.arzeyt.darkness.lightOrb.OrbUpdateMessageToClient;
 import com.arzeyt.darkness.towerObject.TowerBlock;
 import com.arzeyt.darkness.towerObject.TowerMessageHandlerOnClient;
 import com.arzeyt.darkness.towerObject.TowerMessageToClient;
@@ -61,6 +63,7 @@ public class Darkness {
     	public static final byte EFFECTID_MESSAGE_STOC = 11;
     	public static final byte TOWER_MESSAGE_STOC = 12;
     	public static final byte DETONATION_MESSAGE_STOC = 13;
+    	public static final byte ORB_UPDATE_MESSAGE_STOC=14;
         
     //other stuff
     public final static boolean debugMode=false;
@@ -103,6 +106,7 @@ public class Darkness {
 	    		simpleNetworkWrapper.registerMessage(EffectMessageHandlerOnClient.class, EffectMessageToClient.class, EFFECTID_MESSAGE_STOC, Side.CLIENT);
 	    		simpleNetworkWrapper.registerMessage(TowerMessageHandlerOnClient.class, TowerMessageToClient.class, TOWER_MESSAGE_STOC, Side.CLIENT);
 	    		simpleNetworkWrapper.registerMessage(DetonationMessageHandlerOnClient.class, DetonationMessageToClient.class, DETONATION_MESSAGE_STOC, Side.CLIENT);
+	    		simpleNetworkWrapper.registerMessage(OrbUpdateMessageHandlerOnClient.class, OrbUpdateMessageToClient.class, ORB_UPDATE_MESSAGE_STOC, Side.CLIENT);
 	    	}
 	    	
     	//classes

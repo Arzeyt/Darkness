@@ -1,15 +1,16 @@
-package com.arzeyt.darkness.towerObject;
+package com.arzeyt.darkness.lightOrb;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.util.BlockPos;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
-public class OrbUpdateMessageToClient implements IMessage{
+public class DetonationMessageToClient implements IMessage{
 
 	private int x, y, z;
-	private boolean messageValid;
+	private boolean messageValid, detonate;
 	
-	public OrbUpdateMessageToClient(int x, int y, int z) {
+	public DetonationMessageToClient(boolean detonate, int x, int y, int z) {
+		this.detonate=detonate;
 		this.x=x;
 		this.y=y;
 		this.z=z;
@@ -17,13 +18,14 @@ public class OrbUpdateMessageToClient implements IMessage{
 		
 	}
 	
-	public OrbUpdateMessageToClient() {
+	public DetonationMessageToClient() {
 		messageValid=false;
 	}
 	
 	@Override
 	public void fromBytes(ByteBuf buf) {
 		try{
+			detonate=buf.readBoolean();
 			x=buf.readInt();
 			y=buf.readInt();
 			z=buf.readInt();
@@ -37,6 +39,7 @@ public class OrbUpdateMessageToClient implements IMessage{
 	@Override
 	public void toBytes(ByteBuf buf) {
 		if(!messageValid)return;
+		buf.writeBoolean(detonate);
 		buf.writeInt(x);
 		buf.writeInt(y);
 		buf.writeInt(z);
@@ -50,4 +53,7 @@ public class OrbUpdateMessageToClient implements IMessage{
 		return new BlockPos(x, y, z);
 	}
 
+	public boolean shouldDetonate(){
+		return detonate;
+	}
 }

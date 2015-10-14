@@ -7,11 +7,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 public class TowerMessageToClient implements IMessage{
 
 	private int x, y, z;
-	private int orbPower;
+	private int power;
 	private boolean messageValid;
 	
 	public TowerMessageToClient(int orbPower, int x, int y, int z) {
-		this.orbPower = orbPower;
+		this.power = orbPower;
 		this.x=x;
 		this.y=y;
 		this.z=z;
@@ -26,7 +26,7 @@ public class TowerMessageToClient implements IMessage{
 	@Override
 	public void fromBytes(ByteBuf buf) {
 		try{
-			orbPower=buf.readInt();
+			power=buf.readInt();
 			x=buf.readInt();
 			y=buf.readInt();
 			z=buf.readInt();
@@ -40,14 +40,14 @@ public class TowerMessageToClient implements IMessage{
 	@Override
 	public void toBytes(ByteBuf buf) {
 		if(!messageValid)return;
-		buf.writeInt(orbPower);
+		buf.writeInt(power);
 		buf.writeInt(x);
 		buf.writeInt(y);
 		buf.writeInt(z);
 	}
 	
 	public boolean isPowered() {
-		return orbPower>0 ? true : false;
+		return power>0 ? true : false;
 	}
 	
 	public boolean isMessageValid() {
@@ -58,8 +58,8 @@ public class TowerMessageToClient implements IMessage{
 		return new BlockPos(x, y, z);
 	}
 
-	public int getOrbPower() {
-		return orbPower;
+	public int power() {
+		return power;
 	}
 
 }
