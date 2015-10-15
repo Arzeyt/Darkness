@@ -183,9 +183,11 @@ public class DarkLists {
 	}
 	
 	public void addPoweredTowers(TowerTileEntity t){
-		if(towerExists(t)==false){
+		if(t.getWorld().isRemote==false && towerExists(t)==false){
 			poweredTowers.add(t);
+			System.out.println("added powered tower");
 		}
+		System.out.println("tried to add powered tower");
 	}
 	
 	public boolean towerExists(TowerTileEntity t){
@@ -197,7 +199,11 @@ public class DarkLists {
 		return false;
 	}
 	public void removePoweredTower(TowerTileEntity t){
-		poweredTowers.remove(t);
+		if(getPoweredTowers().contains(t)){
+			poweredTowers.remove(t);
+			System.out.println("removed powered tower");
+		}
+		System.out.println("tried to remove powered tower");
 	}
 	
 	public boolean isPlayerInDarkness(EntityPlayer p){

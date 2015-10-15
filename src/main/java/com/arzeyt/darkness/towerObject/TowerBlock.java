@@ -81,6 +81,7 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 							te.setPower(orbPower);							
 							orb.stackSize--;
 							Darkness.darkLists.removeLightOrb(orb);
+							worldIn.playSoundAtEntity(playerIn, "darkness:bell", 1.0F, 1.1F);
 							System.out.println("set tower power to: "+te.getPower());
 						}else{ //this should never happen
 							System.out.println("no data in orb");
@@ -91,6 +92,7 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 				}else{//player is holding nothing
 					System.out.println("power = "+te.getPower()+" time is: "+worldIn.getWorldTime());
 					te.takeOrb(playerIn);
+					worldIn.playSoundAtEntity(playerIn, "darkness:bell", 1.0F, 1.1F);
 				}
 			}
 			

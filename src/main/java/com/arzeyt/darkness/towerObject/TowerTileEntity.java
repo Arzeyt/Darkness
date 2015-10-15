@@ -104,15 +104,15 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 					&& 12000<timeOfDay 
 					&& power>0){
 				System.out.println("decrementing power");
-					setPower(power-1);
+					setPower(getPower()-1);
 			}
 			if(counter%towerChargeRate==0
 					&& timeOfDay<12000
 					&& 0<timeOfDay
 					&& power<100){
-				//System.out.println("incrementing power");
-				setPower(power+1);
-				//System.out.println("power = "+power);
+				System.out.println("incrementing power");
+				setPower(getPower()+1);
+				System.out.println("power = "+getPower());
 			}
 			
 		}
@@ -174,7 +174,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 		super.readFromNBT(compound);
 		NBTTagCompound nbt = (NBTTagCompound) compound.getTag("darkness");
 		this.powered = nbt.getBoolean("powered");
-		setPower(nbt.getInteger("orbPower"));
+		this.power=(nbt.getInteger("orbPower"));
 		System.out.println("nbt tag = "+compound.toString());
 	}
 	
@@ -204,23 +204,26 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	/**
 	 * 
 	 * @param orbPower Values between 0 to 100 ONLY
-	 * @Description sets tower power and adjusts all varaibles accordingly. 
+	 * @Description sets tower power and adjusts all variables accordingly. 
 	 */
 	public void setPower(int power){
 		this.power=power;
 		if(power>0 && this.powered==false){
 			this.powered=true;
-			if(Darkness.darkLists.getPoweredTowers().isEmpty() 
+			if(this.worldObj.isRemote==false
+					&& Darkness.darkLists.getPoweredTowers().isEmpty() 
 					|| Darkness.darkLists.towerExists(this)==false){
 				Darkness.darkLists.addPoweredTowers(this);
 			}
-		}else{
+		}else if(power<=0 && this.powered==true){
 			this.powered=false;
-			if(Darkness.darkLists.getPoweredTowers().isEmpty()==false 
+			if(this.worldObj.isRemote==false
+					&& Darkness.darkLists.getPoweredTowers().isEmpty()==false 
 					&& Darkness.darkLists.towerExists(this)==true){
 				Darkness.darkLists.removePoweredTower(this);
 			}
 		}
+		System.out.println("set power to: "+power+"  powered= "+this.powered);
 		syncState++;
 	}
 	

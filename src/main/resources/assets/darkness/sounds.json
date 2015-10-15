@@ -1,0 +1,4 @@
+{
+"bell": {"category": "master","sounds": ["bell"]},
+"bellLong": {"category": "master","sounds": ["bellLong"]}
+}

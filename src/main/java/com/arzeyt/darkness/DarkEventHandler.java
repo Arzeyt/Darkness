@@ -74,7 +74,9 @@ public class DarkEventHandler {
 			Darkness.darkLists.removeLightOrb(orb);
 			Darkness.darkLists.addOrbDetonationDefault(pos);
 			Darkness.simpleNetworkWrapper.sendToDimension(new DetonationMessageToClient(true, pos.getX(), pos.getY(), pos.getZ()), e.entityItem.dimension);
+			e.entity.worldObj.playSoundAtEntity(e.entity, "darkness:bellLong", 1.0F, 1.0F);
 
+			
 			//throw mobs and set them on fire
 			World w = e.entity.worldObj;
 			Reference r = new Reference();
@@ -97,10 +99,20 @@ public class DarkEventHandler {
 			World w = e.entity.worldObj;
 			BlockPos pos = e.pos;
 			ItemStack stack = e.entityPlayer.getHeldItem();
+			System.out.println("--------------------------------------------------------------------------");
 			
 			if(w.isRemote==false
 					&& stack!= null 
 					&& stack.getItem() instanceof LightOrb){
+				//debug
+				System.out.println("Towers: "+Darkness.darkLists.getPoweredTowers().size());
+				for(TowerTileEntity t : Darkness.darkLists.getPoweredTowers()){
+					System.out.println("tower pos: "+t.getPos());
+				}
+				System.out.println("--------------------------------------------------------------------------");
+				
+				int distance = Darkness.darkLists.getDistanceToNearestTower(w.provider.getDimensionId(), e.pos);
+				System.out.println("distance: "+distance+"  BlockPos: "+pos.toString());
 				if(Darkness.darkLists.getDistanceToNearestTower(w.provider.getDimensionId(), pos)>(Reference.TOWER_RADIUS*2)){
 					if(w.getChunkFromBlockCoords(pos).getBlock(pos) instanceof TowerBlock){
 						//handled in towerblock class
@@ -110,6 +122,7 @@ public class DarkEventHandler {
 						w.setBlockState(new BlockPos(pos.getX(), pos.getY()+1, pos.getZ()), state);
 						Darkness.darkLists.removeLightOrb(stack);
 						stack.stackSize--;
+						w.playSoundAtEntity(e.entityPlayer, "darkness:bell", 1.0F, 0.9F);
 					}
 				}
 			}
@@ -130,8 +143,8 @@ public class DarkEventHandler {
 				}
 			}else if(e.entityLiving instanceof EntityAnimal){
 				EntityAnimal ani = (EntityAnimal) e.entityLiving;
+				
 				if(inDarkness(ani.worldObj, ani.getPosition())){
-					System.out.println("animal hit");
 					Darkness.simpleNetworkWrapper.sendToAll(new FXMessageToClient(Reference.FX_VANISH, ani.getPosition().getX(), ani.getPosition().getY(), ani.getPosition().getZ()));
 					teleportRandomly(ani, 15);
 					e.setCanceled(true);
