@@ -103,12 +103,26 @@ public class DarkLists {
 		return distance;
 	}
 	
+	public int getDistanceToNearestPlayerWithOrb(World w, BlockPos pos){
+		int distance = 1000;
+		for(EntityPlayer pOrb : getPlayersWithOrb()){
+			if(w.provider.getDimensionId()==pOrb.worldObj.provider.getDimensionId()){
+				double dis = pOrb.getDistance(pos.getX(), pos.getY(), pos.getZ());
+				if(dis<distance){
+					distance=(int) dis;
+				}
+			}
+		}
+		return distance;
+	}
+	
 	public void addPlayerWithOrb(EntityPlayer p){
 		playersWithOrb.add(p);
 	}
 	
 	public void removePlayerWithOrb(EntityPlayer p){
-		playersWithOrb.remove(p);
+			playersWithOrb.remove(p);
+		
 	}
 	
 	public HashMap<BlockPos, Integer> getOrbDetonations(){
@@ -139,6 +153,16 @@ public class DarkLists {
 		return distance;
 	}
 	
+	public int getDistanceToNearestOrbDetonation(World w, BlockPos pos){
+		int distance = 1000;
+		for(BlockPos detPos : getOrbDetonations().keySet()){
+			double dis = Math.sqrt(pos.distanceSq(detPos.getX(), detPos.getY(), detPos.getZ()));
+			if(dis<distance){
+				distance=(int) dis;
+			}
+		}
+		return distance;
+	}
 	public HashSet<EntityPlayer> getPlayersInDarkness() {
 		return playersInDarkness;
 	}
@@ -159,9 +183,19 @@ public class DarkLists {
 	}
 	
 	public void addPoweredTowers(TowerTileEntity t){
-		poweredTowers.add(t);
+		if(towerExists(t)==false){
+			poweredTowers.add(t);
+		}
 	}
 	
+	public boolean towerExists(TowerTileEntity t){
+		for(TowerTileEntity tow : getPoweredTowers()){
+			if(tow.getPos()==t.getPos()){
+				return true;
+			}
+		}
+		return false;
+	}
 	public void removePoweredTower(TowerTileEntity t){
 		poweredTowers.remove(t);
 	}
@@ -183,14 +217,21 @@ public class DarkLists {
 	}
 	
 	public int getDistanceToNearestTower(EntityPlayer p){
-		int distance = 1000;
+		System.out.println("towers: "+getPoweredTowers().size());
+		return getDistanceToNearestTower(p.worldObj.provider.getDimensionId(), p.getPosition());
+		
+	}
+	
+	public int getDistanceToNearestTower(int dimID, BlockPos pos){
+		int distance = Integer.MAX_VALUE;
 		for(TowerTileEntity t : getPoweredTowers()){
-			BlockPos pos = t.getPos();
-			int dis = (int) p.getDistance(pos.getX(), pos.getY(), pos.getZ());
-			if(dis<distance){
-				distance=dis;
+			if(dimID==t.getWorld().provider.getDimensionId()){
+				BlockPos tpos = t.getPos();
+				double dis = Math.hypot(pos.getX()-tpos.getX(), pos.getZ()-tpos.getZ());
+				distance = (int) (dis<distance ? dis : distance);
 			}
 		}
+		System.out.println("distance is: "+distance);
 		return distance;
 	}
 	
@@ -226,4 +267,7 @@ public class DarkLists {
 		return null;
 	}
 	
+	public void clearTowerList(){
+		this.poweredTowers= new HashSet<TowerTileEntity>();
+	}
 }

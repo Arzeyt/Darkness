@@ -17,9 +17,11 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
@@ -66,19 +68,19 @@ public class DarkDeterminerServerTick {
 				}
 			//tower
 				else if(Darkness.darkLists.getPoweredTowers().isEmpty()==false
-						&& Darkness.darkLists.getDistanceToNearestTower(player) < TOWER_RADIUS){
+						&& Darkness.darkLists.getDistanceToNearestTower(player) <= TOWER_RADIUS){
 					Darkness.darkLists.removePlayerInDarkness(player);
 					System.out.println("near powered tower");
 				}
 			//player
 				else if(Darkness.darkLists.getPlayersWithOrb().isEmpty()==false
-						&& Darkness.darkLists.getDistanceToNearestPlayerWithOrb(player)<HELD_ORB_RADIUS){
+						&& Darkness.darkLists.getDistanceToNearestPlayerWithOrb(player)<=HELD_ORB_RADIUS){
 					Darkness.darkLists.removePlayerInDarkness(player);
 					System.out.println("near player with orb");
 				}
 			//detonations
 				else if(Darkness.darkLists.getOrbDetonations().isEmpty()==false
-						&& Darkness.darkLists.getDistanceToNearestOrbDetonation(player)<ORB_DETONATION_RAIDUS){
+						&& Darkness.darkLists.getDistanceToNearestOrbDetonation(player)<=ORB_DETONATION_RAIDUS){
 					Darkness.darkLists.removePlayerInDarkness(player);
 					System.out.println("near orb detonation");
 				}
@@ -177,4 +179,28 @@ public class DarkDeterminerServerTick {
 		}
 	}
 	
+	@SubscribeEvent
+	public void playerEffects(PlayerTickEvent e){
+		if(counter%(DARKNESS_CHECK_RATE/2)==1){
+			if(Darkness.darkLists.isPlayerInDarkness(e.player)){
+				e.player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE+20, 1, false, false));
+			}else{
+				e.player.removePotionEffect(2);
+			}
+		}
+		ItemStack stack = e.player.getHeldItem();
+		if(counter%DARKNESS_CHECK_RATE==1){
+			if(stack !=null 
+					&& stack.getItem() instanceof LightOrb==false
+					&& Darkness.darkLists.getPlayersWithOrb().contains(e.player)){
+				Darkness.darkLists.removePlayerWithOrb(e.player);
+			}else if(stack==null
+					&& Darkness.darkLists.getPlayersWithOrb().contains(e.player)){
+				Darkness.darkLists.removePlayerWithOrb(e.player);
+			}
+		}
+
+		
+	}
 }
+

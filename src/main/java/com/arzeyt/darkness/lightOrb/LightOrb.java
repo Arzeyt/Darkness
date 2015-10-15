@@ -4,14 +4,20 @@ import java.util.List;
 
 import com.arzeyt.darkness.Darkness;
 import com.arzeyt.darkness.Reference;
+import com.arzeyt.darkness.towerObject.TowerBlock;
+import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
+import net.minecraft.block.BlockAir;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayer.EnumChatVisibility;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
@@ -133,13 +139,25 @@ public class LightOrb extends Item {
 	public ItemStack onItemRightClick(ItemStack itemStackIn, World worldIn,
 			EntityPlayer playerIn) {
 		
+		//debug info
 		Reference r = new Reference();
 		NBTTagCompound nbt = (NBTTagCompound) itemStackIn.getTagCompound().getCompoundTag("darkness");
 		System.out.println("ID: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" DissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));
 		System.out.println("orbs in list (lightOrb): "+Darkness.darkLists.getLightOrbs().size());
+
 		
 		
 		return super.onItemRightClick(itemStackIn, worldIn, playerIn);
+	}
+	
+	@Override
+	public boolean onItemUse(ItemStack stack, EntityPlayer playerIn,
+			World worldIn, BlockPos pos, EnumFacing side, float hitX,
+			float hitY, float hitZ) {
+		
+		worldIn.getChunkFromBlockCoords(pos).setBlockState(pos, Darkness.lightBlock.getDefaultState());
+		
+		return super.onItemUse(stack, playerIn, worldIn, pos, side, hitX, hitY, hitZ);
 	}
 	
 }

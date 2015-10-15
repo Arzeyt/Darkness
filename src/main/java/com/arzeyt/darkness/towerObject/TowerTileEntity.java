@@ -6,8 +6,12 @@ import com.arzeyt.darkness.Darkness;
 import com.arzeyt.darkness.Reference;
 
 import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockDirt;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
@@ -24,10 +28,11 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	public final int SYNC_DISTANCE = 50;
 	private int counter = 0;
 	private int syncRate = 20*3;
-	private int nearbyPlayerSyncRate = 20*500;
+	private int nearbyPlayerSyncRate = 20*5;
 	private int towerDepletionRate = 12000/100;
 	private int towerChargeRate = 6000/100;
 	private int particleProductionRate = 3;
+	private int borderConstructRate = 3;
 	private final int TAKE_ORB_COOLDOWN=200; 
 		private int noonLowerEnd=6000-(TAKE_ORB_COOLDOWN/2);
 		private int noonHigherEnd=6000+(TAKE_ORB_COOLDOWN/2);
@@ -45,6 +50,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	private int power = 0;
 	private long minecraftTime =0;
 	private boolean takingOrbAtNoon=false;
+	private boolean doBorderEffect=false;
 
 	
 	
@@ -63,11 +69,11 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 			}
 			//if there is a player within sync distance, always sync according to the sync rate
 			if(counter%nearbyPlayerSyncRate==0
-					&&worldObj.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), SYNC_DISTANCE)!=null 
-					&& worldObj.isRemote==false){
+					&& worldObj.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), SYNC_DISTANCE)!=null 
+					&& power>99){
 				
 				System.out.println("player is nearby");
-				//updateClient();
+				updateClient();
 			}
 			
 			//for initial loading
@@ -104,19 +110,10 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 					&& timeOfDay<12000
 					&& 0<timeOfDay
 					&& power<100){
-				System.out.println("incrementing power");
+				//System.out.println("incrementing power");
 				setPower(power+1);
-				System.out.println("power = "+power);
+				//System.out.println("power = "+power);
 			}
-			
-			//take orb cooldown increment. stop when reach 0
-			/**
-			if(takeOrbAtNoonCooldownCounter>0){
-				takeOrbAtNoonCooldownCounter--;
-			}else if(takeOrbAtNoonCooldownCounter==0){
-				takingOrbAtNoon=false;
-			}
-			**/
 			
 		}
 		if(worldObj.isRemote==true){//clientside
@@ -129,7 +126,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 			}
 			if(getPower()>0){
 				Reference r = Darkness.reference;
-				double adjustedTowerRadius = (double)r.TOWER_RADIUS/100*(double)power;
+				double adjustedTowerRadius = (double)r.TOWER_RADIUS/100*(double)getPower();
 				if(adjustedTowerRadius<1){
 					adjustedTowerRadius=1;
 				}
@@ -139,7 +136,20 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				double randZ = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
 				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5+randX, rand.nextInt(256), pos.getZ()+randZ+.5, 0.0D, 0.1D, 0.0D);
 			}
-		
+			if(doBorderEffect==false
+					&&power>0){
+				doBorderEffect=true;
+				borderEffectRender();
+				System.out.println("border effect on");
+			}else if(doBorderEffect==true
+					&&power<=0){
+				doBorderEffect=false;
+				borderEffectOff();
+				System.out.println("border effect off");
+			}else if(doBorderEffect==true
+					&&counter%borderConstructRate==0){
+				borderEffectRender();
+			}
 		}
 		
 		
@@ -153,7 +163,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 
 	private void updateClient() {
 		if(worldObj.isRemote==false){
-			System.out.println("sending message: Power= "+getPower()+"Powered= "+powered);
+			//System.out.println("sending message: Power= "+getPower()+"Powered= "+powered);
 			Darkness.simpleNetworkWrapper.sendToAll(new TowerMessageToClient(getPower(), pos.getX(), pos.getY(), pos.getZ()));
 		}
 	}
@@ -198,15 +208,16 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	 */
 	public void setPower(int power){
 		this.power=power;
-		if(power>0){
+		if(power>0 && this.powered==false){
 			this.powered=true;
 			if(Darkness.darkLists.getPoweredTowers().isEmpty() 
-					|| (Darkness.darkLists.getPoweredTowers().isEmpty()==false && Darkness.darkLists.getPoweredTowers().contains(this))){
+					|| Darkness.darkLists.towerExists(this)==false){
 				Darkness.darkLists.addPoweredTowers(this);
 			}
 		}else{
 			this.powered=false;
-			if(Darkness.darkLists.getPoweredTowers().isEmpty()==false || Darkness.darkLists.getPoweredTowers().contains(this)==true){
+			if(Darkness.darkLists.getPoweredTowers().isEmpty()==false 
+					&& Darkness.darkLists.towerExists(this)==true){
 				Darkness.darkLists.removePoweredTower(this);
 			}
 		}
@@ -269,7 +280,80 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 		return powered;
 	}
 	
+	private void borderEffectRender(){
+		int towerRadius=Reference.TOWER_RADIUS;
+		IBlockState state = Darkness.lightBlock.getDefaultState();
+
+		int y = Minecraft.getMinecraft().thePlayer.getPosition().getY()-2;
+
+		createXLineSparkles(worldObj, pos.getX()-towerRadius, pos.getX()+towerRadius, y, pos.getZ()-towerRadius,  7);
+		createXLineSparkles(worldObj, pos.getX()-towerRadius, pos.getX()+towerRadius, y, pos.getZ()+towerRadius,  7);
+		createZLineSparkles(worldObj, pos.getX()+towerRadius, y, pos.getZ()-towerRadius, pos.getZ()+towerRadius,  7);
+		createZLineSparkles(worldObj, pos.getX()-towerRadius, y, pos.getZ()-towerRadius, pos.getZ()+towerRadius,  7);
+		
+		y=y+2;
+		createXLineSparkles(worldObj, pos.getX()-towerRadius, pos.getX()+towerRadius, y, pos.getZ()-towerRadius,  7);
+		createXLineSparkles(worldObj, pos.getX()-towerRadius, pos.getX()+towerRadius, y, pos.getZ()+towerRadius,  7);
+		createZLineSparkles(worldObj, pos.getX()+towerRadius, y, pos.getZ()-towerRadius, pos.getZ()+towerRadius,  7);
+		createZLineSparkles(worldObj, pos.getX()-towerRadius, y, pos.getZ()-towerRadius, pos.getZ()+towerRadius,  7);
+	}
 	
+	private void createXLineSparkles(World w, int xstart, int xend, int y, int z, int density){
+		Random rand = new Random();
+		for(int x=xstart; x<xend; x=x+rand.nextInt(density)){
+			BlockPos pos = new BlockPos(x,y,z);
+			if(rand.nextFloat()<=density){
+				w.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX(), pos.getY(), pos.getZ(), 0.0D, 1.0D, 0.0D);
+			}
+		}
+	}
 	
+	private void createZLineSparkles(World w, int x, int y, int zstart, int zend, int density){
+		Random rand = new Random();
+		for(int z=zstart; z<zend; z=z+rand.nextInt(density)){
+			BlockPos pos = new BlockPos(x,y,z);
+			if(rand.nextFloat()<=density){
+					w.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX(), pos.getY(), pos.getZ(), 0.0D, 1.0D, 0.0D);
+			}
+		}
+	}
+	
+	private void createXLine(World w, int xstart, int xend, int y, int z, IBlockState state, int density){
+		Random rand = new Random();
+		for(int x=xstart; x<xend; x=x+rand.nextInt(density)){
+			BlockPos pos = new BlockPos(x,y,z);
+			if(worldObj.getChunkFromBlockCoords(pos).getBlock(pos) instanceof BlockAir
+					&& rand.nextFloat()<=density){
+				w.getChunkFromBlockCoords(pos).setBlockState(pos, state);
+			}
+		}
+	}
+	
+	private void createZLine(World w, int x, int y, int zstart, int zend, IBlockState state, int density){
+		Random rand = new Random();
+		for(int z=zstart; z<zend; z=z+rand.nextInt(density)){
+			BlockPos pos = new BlockPos(x,y,z);
+			if(worldObj.getChunkFromBlockCoords(pos).getBlock(pos) instanceof BlockAir
+					&& rand.nextFloat()<=density){
+					w.getChunkFromBlockCoords(pos).setBlockState(pos, state);
+			}
+		}
+	}
+	private void borderEffectOff(){
+		BlockPos minPos = new BlockPos(this.getPos().getX()-Reference.TOWER_RADIUS, 0, this.getPos().getZ()-Reference.TOWER_RADIUS);
+		BlockPos maxPos = new BlockPos(getPos().getX()+Reference.TOWER_RADIUS, 256, this.getPos().getZ()+Reference.TOWER_RADIUS);
+		worldObj.markBlockRangeForRenderUpdate(minPos, maxPos);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof TowerTileEntity){
+			TowerTileEntity t = (TowerTileEntity) obj;
+			if(t.getPos()==this.getPos()){
+				return true;
+			}
+		}
+		return false;
+	}
 	
 }

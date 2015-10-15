@@ -13,6 +13,7 @@ import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.lightOrb.LightOrbBlock;
 import com.arzeyt.darkness.lightOrb.OrbUpdateMessageHandlerOnClient;
 import com.arzeyt.darkness.lightOrb.OrbUpdateMessageToClient;
+import com.arzeyt.darkness.towerObject.LightBlock;
 import com.arzeyt.darkness.towerObject.TowerBlock;
 import com.arzeyt.darkness.towerObject.TowerMessageHandlerOnClient;
 import com.arzeyt.darkness.towerObject.TowerMessageToClient;
@@ -32,6 +33,7 @@ import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -49,6 +51,7 @@ public class Darkness {
     public static Block effectBlock;
     public static Block towerBlock;
     public static Block lightOrbBlock;
+    public static Block lightBlock;
     
     //items
     public static Item effectItem;
@@ -64,6 +67,7 @@ public class Darkness {
     	public static final byte TOWER_MESSAGE_STOC = 12;
     	public static final byte DETONATION_MESSAGE_STOC = 13;
     	public static final byte ORB_UPDATE_MESSAGE_STOC=14;
+    	public static final byte FX_MESSAGE_STOC=15;
         
     //other stuff
     public final static boolean debugMode=false;
@@ -91,6 +95,7 @@ public class Darkness {
     	//blocks
     		towerBlock = new TowerBlock();
     		lightOrbBlock = new LightOrbBlock();
+    		lightBlock = new LightBlock();
     	
     	//items
     		lightOrb = new LightOrb();
@@ -107,6 +112,7 @@ public class Darkness {
 	    		simpleNetworkWrapper.registerMessage(TowerMessageHandlerOnClient.class, TowerMessageToClient.class, TOWER_MESSAGE_STOC, Side.CLIENT);
 	    		simpleNetworkWrapper.registerMessage(DetonationMessageHandlerOnClient.class, DetonationMessageToClient.class, DETONATION_MESSAGE_STOC, Side.CLIENT);
 	    		simpleNetworkWrapper.registerMessage(OrbUpdateMessageHandlerOnClient.class, OrbUpdateMessageToClient.class, ORB_UPDATE_MESSAGE_STOC, Side.CLIENT);
+	    		simpleNetworkWrapper.registerMessage(FXMessageHandlerOnClient.class, FXMessageToClient.class, FX_MESSAGE_STOC, Side.CLIENT);
 	    	}
 	    	
     	//classes
@@ -130,7 +136,7 @@ public class Darkness {
 	    	//blocks
 		    	renderItem.getItemModelMesher().register(Item.getItemFromBlock(towerBlock), 0, new ModelResourceLocation(Darkness.MODID + ":" + ((TowerBlock) towerBlock).getName(), "inventory"));
 		    	renderItem.getItemModelMesher().register(Item.getItemFromBlock(lightOrbBlock), 0, new ModelResourceLocation(Darkness.MODID + ":" + ((LightOrbBlock) lightOrbBlock).getName(), "inventory"));
-	
+		    	
 	    	//items
 		    	renderItem.getItemModelMesher().register(lightOrb, 0, new ModelResourceLocation(Darkness.MODID + ":" + ((LightOrb)lightOrb).getName(), "inventory"));
 	
@@ -154,6 +160,11 @@ public class Darkness {
     		statusBarRenderer = new StatusBarRenderer(Minecraft.getMinecraft());
     		MinecraftForge.EVENT_BUS.register(new OverlayEventHandler(statusBarRenderer));
     	}
+    }
+    
+    @EventHandler
+    public void serverStop(FMLServerStoppingEvent e){
+    	darkLists.clearTowerList();
     }
 }
 

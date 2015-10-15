@@ -21,7 +21,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 public class ClientEffectTick {
 
-	private final int DETONATION_TICK_RATE = Reference.DETONATION_TICK_RATE;
+	private final int DETONATION_TICK_RATE = Reference.DETONATION_EFFECT_TICK_RATE;
 	private int counter=0;
 	
 	@SubscribeEvent
@@ -70,5 +70,10 @@ public class ClientEffectTick {
 				}
 			}
 		}
+	}
+	
+	@SubscribeEvent
+	public void towerRadiusEffect(ClientTickEvent e){
+		
 	}
 }
