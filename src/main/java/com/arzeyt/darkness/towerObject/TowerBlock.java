@@ -1,6 +1,7 @@
 package com.arzeyt.darkness.towerObject;
 
 import java.awt.image.TileObserver;
+import java.util.Random;
 
 import com.arzeyt.darkness.Darkness;
 import com.arzeyt.darkness.Reference;
@@ -73,9 +74,10 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 			if(!te.isInvalid()){
 				if(playerIn.getHeldItem()!=null){
 					
+					//add orb to tower, and replace tower power with orb power
 					if(playerIn.getHeldItem().getItem() instanceof LightOrb){ //player is holding a light orb
 						ItemStack orb = playerIn.getHeldItem();
-						if(orb.getTagCompound().hasKey("darkness")){ //has darkness data
+						if(orb.getTagCompound().hasKey("darkness")){ 
 							NBTTagCompound nbt = orb.getTagCompound().getCompoundTag("darkness");
 							int orbPower = nbt.getInteger(Reference.POWER);
 							te.setPower(orbPower);							
@@ -92,12 +94,11 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 				}else{//player is holding nothing
 					System.out.println("power = "+te.getPower()+" time is: "+worldIn.getWorldTime());
 					te.takeOrb(playerIn);
-					worldIn.playSoundAtEntity(playerIn, "darkness:bell", 1.0F, 1.1F);
-				}
+					Random rand = new Random();
+					worldIn.playSoundAtEntity(playerIn, "darkness:bell", 1.0F, 0.5F+rand.nextFloat());				}
 			}
 			
 		}
-		worldIn.spawnParticle(EnumParticleTypes.EXPLOSION_HUGE, hitX, hitY, hitZ, 0, 1.0D, 0);
 
 	return true;
 	}

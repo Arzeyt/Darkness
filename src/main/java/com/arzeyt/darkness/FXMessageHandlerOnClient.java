@@ -1,5 +1,7 @@
 package com.arzeyt.darkness;
 
+import java.util.Random;
+
 import com.arzeyt.darkness.effectObject.EffectMessageToServer;
 import com.arzeyt.darkness.effectObject.EffectTileEntity;
 
@@ -45,10 +47,11 @@ public class FXMessageHandlerOnClient implements IMessageHandler<FXMessageToClie
 		System.out.println("processing FXMessageToClient client side");
 		BlockPos pos = message.getPos();
 		switch(message.getEffectID()){
-		case 1:
+		case Reference.FX_VANISH:
 			vanishSmoke(worldClient, pos);
 			break;
-		case 2:
+		case Reference.FX_BLOCK:
+			blockSmoke(worldClient, pos);
 			break;
 		}
 		
@@ -63,6 +66,13 @@ public class FXMessageHandlerOnClient implements IMessageHandler<FXMessageToClie
 			}
 		}
 
+	}
+	
+	public void blockSmoke(WorldClient w, BlockPos pos){
+		Random rand = new Random();
+		for(int i=0; i<10; i++){
+			w.spawnParticle(EnumParticleTypes.SMOKE_LARGE, pos.getX(), pos.getY(), pos.getZ(), -0.5D+rand.nextFloat(),-0.5D+rand.nextFloat(), -0.5D+rand.nextFloat());
+		}
 	}
 
 }

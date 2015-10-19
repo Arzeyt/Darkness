@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.GameRules;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
@@ -75,5 +76,37 @@ public class ClientEffectTick {
 	@SubscribeEvent
 	public void towerRadiusEffect(ClientTickEvent e){
 		
+	}
+
+	@SubscribeEvent
+	public void nightRender(ClientTickEvent e){
+		if(e.side==Side.CLIENT && Minecraft.getMinecraft().theWorld!=null){
+			if(Darkness.darkLists.isPlayerInTowerRadius(Minecraft.getMinecraft().thePlayer)==false) {
+				System.out.println("towers in list: " + Darkness.darkLists.getPoweredTowers().size());
+				Minecraft.getMinecraft().theWorld.setWorldTime(18000);
+
+			}
+		}
+	}
+
+
+
+	//no way to get if pos is in darkness client side...yet.
+	public void ambientSmokeSparkleEffect(ClientTickEvent e){
+		BlockPos pos = Minecraft.getMinecraft().thePlayer.getPosition();
+		int radius=5;
+		int height=2;
+		int spawnChance = 30;
+		Random rand = new Random();
+
+		for(int i=-radius; i<radius; i++){
+			for(int j=-height; j<height; j++){
+				for(int k=-radius; k<radius; k++){
+					if(rand.nextInt()<=spawnChance){
+						Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+i, pos.getY()+j, pos.getZ()+k, 0.0D, 0.5D, 0.0D);
+					}
+				}
+			}
+		}
 	}
 }

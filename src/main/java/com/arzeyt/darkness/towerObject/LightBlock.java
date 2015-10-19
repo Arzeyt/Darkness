@@ -28,20 +28,24 @@ public class LightBlock extends Block{
 	
 	@Override
 	public void onBlockAdded(World worldIn, BlockPos pos, IBlockState state) {
-		worldIn.scheduleUpdate(pos, this, this.tickRate(worldIn));
+		//worldIn.scheduleUpdate(pos, this, this.tickRate(worldIn));
 	}
 	
+	/**
 	public int tickRate(World worldIn) {
 		return 20;
 	}
+	**/
 	
 	@Override
 	public void randomDisplayTick(World worldIn, BlockPos pos,
 			IBlockState state, Random rand) {
+		/**
 		if(rand.nextInt(3)==1){
 			worldIn.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX(), pos.getY(), pos.getZ(), 0.0D, 1.0D, 0.0D);
 		}
 		super.randomDisplayTick(worldIn, pos, state, rand);
+		**/
 	}
 	
 

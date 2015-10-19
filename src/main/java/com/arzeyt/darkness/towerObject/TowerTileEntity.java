@@ -3,6 +3,7 @@ package com.arzeyt.darkness.towerObject;
 import java.util.Random;
 
 import com.arzeyt.darkness.Darkness;
+import com.arzeyt.darkness.EffectHelper;
 import com.arzeyt.darkness.Reference;
 
 import net.minecraft.block.BlockAir;
@@ -29,9 +30,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	private int counter = 0;
 	private int syncRate = 20*3;
 	private int nearbyPlayerSyncRate = 20*5;
-	private int towerDepletionRate = 12000/100;
-	private int towerChargeRate = 6000/100;
-	private int particleProductionRate = 3;
+	private int particleProductionRate = 2;
 	private int borderConstructRate = 3;
 	private final int TAKE_ORB_COOLDOWN=200; 
 		private int noonLowerEnd=6000-(TAKE_ORB_COOLDOWN/2);
@@ -51,7 +50,11 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 	private long minecraftTime =0;
 	private boolean takingOrbAtNoon=false;
 	private boolean doBorderEffect=false;
+	
+	private int token = 0;
+	private BlockPos magicBlock=pos;
 
+	Reference r = new Reference();
 	
 	
 	public void update() {
@@ -91,39 +94,31 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 			minecraftTime=worldObj.getWorldTime();
 			long timeOfDay = minecraftTime%24000;
 			
-			if(counter%syncRate==0){	
-				/**if(noonLowerEnd<timeOfDay 
-						&& timeOfDay < noonHigherEnd
-						&& takingOrbAtNoon==false){
-					System.out.println("minecraft time: "+minecraftTime);
-					setPower(100);
-				}**/
-			}
-			if(counter%towerDepletionRate==0
-					&& timeOfDay < 24000 
-					&& 12000<timeOfDay 
+			if(counter%r.TOWER_DEPLETION_RATE==0
+					&& timeOfDay < r.TOWER_DEPLETE_END_TIME
+					&& timeOfDay> r.TOWER_DEPLETE_START_TIME
 					&& power>0){
 				System.out.println("decrementing power");
 					setPower(getPower()-1);
 			}
-			if(counter%towerChargeRate==0
-					&& timeOfDay<12000
-					&& 0<timeOfDay
+			if(counter%r.TOWER_CHARGE_RATE==0
+					&& timeOfDay<r.TOWER_CHARGE_END_TIME
+					&& r.TOWER_CHARGE_START_TIME<timeOfDay
 					&& power<100){
 				System.out.println("incrementing power");
 				setPower(getPower()+1);
 				System.out.println("power = "+getPower());
 			}
-			
 		}
 		if(worldObj.isRemote==true){//clientside
 			
 			//effect
-			double adjustedParticleProductionRate = getPower() > 1 ? particleProductionRate*100/getPower() : particleProductionRate*100;
+			double adjustedParticleProductionRate = getPower() > 0 ? particleProductionRate*100/getPower() : particleProductionRate*100;
 			if(getPower()>0 && counter%adjustedParticleProductionRate==0){
 				Random rand = new Random();
-				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5, pos.getY()+2, pos.getZ()+.5, -0.5D+rand.nextDouble(), 1.0D, -0.5D+rand.nextDouble());
+				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5, pos.getY()+2, pos.getZ()+.5, -0.5D+rand.nextDouble(), 0.5D, -0.5D+rand.nextDouble());
 			}
+			/**
 			if(getPower()>0){
 				Reference r = Darkness.reference;
 				double adjustedTowerRadius = (double)r.TOWER_RADIUS/100*(double)getPower();
@@ -135,7 +130,8 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				double randY = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
 				double randZ = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
 				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5+randX, rand.nextInt(256), pos.getZ()+randZ+.5, 0.0D, 0.1D, 0.0D);
-			}
+			}**/
+			
 			if(doBorderEffect==false
 					&&power>0){
 				doBorderEffect=true;
@@ -150,6 +146,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 					&&counter%borderConstructRate==0){
 				borderEffectRender();
 			}
+		
 		}
 		
 		
@@ -159,6 +156,44 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 		if(counter>Integer.MAX_VALUE-20){ //just so we dont get huge numbers
 			counter=0;
 		}
+	}
+
+	Random rand = new Random();
+	private void magicLight() {
+		if(token>100 || counter<200){
+			return;
+		}
+		if(magicBlock.getX()==0){
+			magicBlock=pos;
+		}
+		int i = rand.nextInt(3);
+		int x=magicBlock.getX();
+		int y=magicBlock.getY();
+		int z=magicBlock.getZ();
+		switch (i) {
+		case 0:
+			x=x+1;
+			break;
+		case 1: 
+			x=x-1;
+			break;
+		case 2:
+			z=z+1;
+			break;
+		case 3:
+			z=z-1;
+		default:
+			break;
+		}
+		System.out.println("magic block: "+magicBlock.toString());
+		magicBlock = EffectHelper.findGroundY(worldObj, new BlockPos(x,y+1,z));
+		try{
+			worldObj.getChunkFromBlockCoords(magicBlock).setBlockState(magicBlock, Blocks.bedrock.getDefaultState());
+		}catch(Exception e){
+			System.out.println("exception, brah");
+		}
+		token++;
+		System.out.println("token: "+token);
 	}
 
 	private void updateClient() {
@@ -227,6 +262,15 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 		syncState++;
 	}
 	
+	public void orbAbove(boolean present){
+		if(present){
+			if(worldObj.getChunkFromBlockCoords(pos).getBlock(pos.getX(), pos.getY()+2, pos.getZ()) instanceof BlockAir){
+				worldObj.getChunkFromBlockCoords(pos).setBlockState(new BlockPos(pos.getX(),pos.getY()+2, pos.getZ()), Darkness.lightOrbBlock.getDefaultState());
+			}
+		}else{
+			worldObj.getChunkFromBlockCoords(pos).setBlockState(new BlockPos(pos.getX(), pos.getY()+2, pos.getZ()), Blocks.air.getDefaultState());
+		}
+	}
 	/**
 	 * 
 	 * @param p player to give the orb to

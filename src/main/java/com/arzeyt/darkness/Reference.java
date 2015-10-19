@@ -2,7 +2,13 @@ package com.arzeyt.darkness;
 
 public final class Reference {
 
-	public static final int TOWER_RADIUS=25;
+	public static final int TOWER_RADIUS=50;
+	public static final int TOWER_DEPLETION_RATE=12000/100;
+	public static final int TOWER_CHARGE_RATE=6000/100;
+	public static final int TOWER_CHARGE_START_TIME=0;
+	public static final int TOWER_CHARGE_END_TIME=12000;
+	public static final int TOWER_DEPLETE_START_TIME=12001;
+	public static final int TOWER_DEPLETE_END_TIME=24000;
 	
 	public static final int HELD_ORB_RADIUS=5;
 
@@ -24,6 +30,11 @@ public final class Reference {
 	
 	//FX
 	public static final int FX_VANISH = 1;
+	public static final int FX_BLOCK = 2;
+
+	//player effects
+	public static final int EVASION_CHECK_RADIUS= 5;
+	public static final int EVASION_RADIUS = 15;
 
 
 }

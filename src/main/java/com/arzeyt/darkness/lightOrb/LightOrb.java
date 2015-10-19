@@ -139,14 +139,18 @@ public class LightOrb extends Item {
 	public ItemStack onItemRightClick(ItemStack itemStackIn, World worldIn,
 			EntityPlayer playerIn) {
 		
-		//debug info CLIENT ONLY
-		Reference r = new Reference();
-		NBTTagCompound nbt = (NBTTagCompound) itemStackIn.getTagCompound().getCompoundTag("darkness");
-		System.out.println("------------------------------------------------------------------");
-		System.out.println("ID: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" DissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));
-		System.out.println("orbs in list (lightOrb): "+Darkness.darkLists.getLightOrbs().size());
-		
-		System.out.println("------------------------------------------------------------------");
+		if(itemStackIn.hasTagCompound()==false){
+			System.out.println("u must beh haxin, cuz that dont got no dats, brah");
+		}else{
+			//debug info CLIENT ONLY
+			Reference r = new Reference();
+			NBTTagCompound nbt = (NBTTagCompound) itemStackIn.getTagCompound().getCompoundTag("darkness");
+			System.out.println("------------------------------------------------------------------");
+			System.out.println("ID: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" DissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));
+			System.out.println("orbs in list (lightOrb): "+Darkness.darkLists.getLightOrbs().size());
+			
+			System.out.println("------------------------------------------------------------------");
+		}
 
 		
 		

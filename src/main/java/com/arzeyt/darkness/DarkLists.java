@@ -1,9 +1,10 @@
 package com.arzeyt.darkness;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
+import com.arzeyt.darkness.lightOrb.Detonation;
 import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
@@ -14,12 +15,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.common.util.Constants.NBT;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static com.arzeyt.darkness.Reference.*;
 
 /**
  *This class should only run on the server, and only have one instance
@@ -28,7 +25,8 @@ public class DarkLists {
 
 	//for dark determination
 	private HashSet<EntityPlayer> playersWithOrb = new HashSet<EntityPlayer>();
-	private HashMap<BlockPos, Integer> orbDetonations = new HashMap<BlockPos, Integer>(); //position of detonation and lifetime
+	//private HashMap<BlockPos, Integer> orbDetonations = new HashMap<BlockPos, Integer>(); //position of detonation and lifetime
+	private HashSet<Detonation> orbDetonations = new HashSet<Detonation>();
 	private HashSet<EntityPlayer> playersInDarkness = new HashSet<EntityPlayer>();
 	private HashSet<TowerTileEntity> poweredTowers = new HashSet<TowerTileEntity>();
 	
@@ -125,29 +123,33 @@ public class DarkLists {
 		
 	}
 	
-	public HashMap<BlockPos, Integer> getOrbDetonations(){
+	public HashSet<Detonation> getOrbDetonations(){
 		return orbDetonations;
 	}
 	
-	public void addOrbDetonationDefault(BlockPos orbPos){
-		orbDetonations.put(orbPos, Reference.DETONATION_LIFETIME);
+	public void addNewOrbDetonation(World w, BlockPos orbPos){
+		orbDetonations.add(new Detonation(w, orbPos, DETONATION_LIFETIME));
 	}
 	
-	public void addOrbDetonation(BlockPos orbPos, int lifetime){
-		orbDetonations.put(orbPos, lifetime);
+	public void addOrbDetonation(World w, BlockPos orbPos, int lifetime){
+		orbDetonations.add(new Detonation(w, orbPos, lifetime));
 	}
-	public void removeOrbDetonation(BlockPos pos){
-		if(orbDetonations.containsKey(pos)){
-			orbDetonations.remove(pos);
+	
+	public void removeOrbDetonation(World w, BlockPos pos){
+		Detonation d = new Detonation(w, pos, 1);
+		if(orbDetonations.contains(d)){
+			orbDetonations.remove(d);
 		}
 	}
 	
 	public int getDistanceToNearestOrbDetonation(EntityPlayer p){
 		int distance = 1000;
-		for(BlockPos pos : getOrbDetonations().keySet()){
-			int dis = (int) p.getDistance(pos.getX(), pos.getY(), pos.getZ());
-			if(dis<distance){
-				distance=dis;
+		for(Detonation d : getOrbDetonations()){
+			if(d.w.provider.getDimensionId()==p.worldObj.provider.getDimensionId()){
+				int dis = (int) p.getDistance(d.pos.getX(), d.pos.getY(), d.pos.getZ());
+				if(dis<distance){
+					distance=dis;
+				}
 			}
 		}
 		return distance;
@@ -155,10 +157,12 @@ public class DarkLists {
 	
 	public int getDistanceToNearestOrbDetonation(World w, BlockPos pos){
 		int distance = 1000;
-		for(BlockPos detPos : getOrbDetonations().keySet()){
-			double dis = Math.sqrt(pos.distanceSq(detPos.getX(), detPos.getY(), detPos.getZ()));
-			if(dis<distance){
-				distance=(int) dis;
+		for(Detonation d : getOrbDetonations()){
+			if(d.w.provider.getDimensionId()==w.provider.getDimensionId()){
+				double dis = Math.sqrt(pos.distanceSq(d.pos.getX(), d.pos.getY(), d.pos.getZ()));
+				if(dis<distance){
+					distance=(int) dis;
+				}
 			}
 		}
 		return distance;
@@ -207,9 +211,8 @@ public class DarkLists {
 	}
 	
 	public boolean isPlayerInDarkness(EntityPlayer p){
-		if(getPlayersInDarkness().contains(p))return true;
-		return false;
-		
+		return getPlayersInDarkness().contains(p);
+
 		/**
 		if(playersInDarkness.size()>0){
 			for(EntityPlayer p : getPlayersInDarkness()){
@@ -223,21 +226,79 @@ public class DarkLists {
 	}
 	
 	public int getDistanceToNearestTower(EntityPlayer p){
-		System.out.println("towers: "+getPoweredTowers().size());
+		//System.out.println("towers: "+getPoweredTowers().size());
 		return getDistanceToNearestTower(p.worldObj.provider.getDimensionId(), p.getPosition());
 		
 	}
 	
+	/**
+	 * 
+	 * @param dimID
+	 * @param pos
+	 * @return a realistic distance value. Change to manhattan distance for performances.
+	 */
 	public int getDistanceToNearestTower(int dimID, BlockPos pos){
 		int distance = Integer.MAX_VALUE;
 		for(TowerTileEntity t : getPoweredTowers()){
 			if(dimID==t.getWorld().provider.getDimensionId()){
-				BlockPos tpos = t.getPos();
-				double dis = Math.hypot(pos.getX()-tpos.getX(), pos.getZ()-tpos.getZ());
+				List positions = (List) t.getPos().getAllInBox(new BlockPos(t.getPos().getX()- TOWER_RADIUS,0, t.getPos().getZ()- TOWER_RADIUS), new BlockPos(t.getPos().getX()+ TOWER_RADIUS, 256, t.getPos().getZ()+ TOWER_RADIUS));
+				if(positions.contains(pos)){
+					
+					
+				
+				}
+						BlockPos tpos = t.getPos();
+				int dis = (int) Math.hypot((int)pos.getX()-(int)tpos.getX(), (int)pos.getZ()-(int)tpos.getZ());
 				distance = (int) (dis<distance ? dis : distance);
 			}
 		}
-		System.out.println("distance is: "+distance);
+		//System.out.println("distance is: "+distance);
+		return distance;
+	}
+	
+	public boolean isPosInTowerRadius(World w, BlockPos pos){
+			for(TowerTileEntity t : getPoweredTowers()){
+				if(w.provider.getDimensionId()==t.getWorld().provider.getDimensionId()) {
+					int xmax = t.getPos().getX() + TOWER_RADIUS;
+					int xmin = t.getPos().getX() - TOWER_RADIUS;
+
+					int zmax = t.getPos().getZ() + TOWER_RADIUS;
+					int zmin = t.getPos().getZ() - TOWER_RADIUS;
+
+					int px = pos.getX();
+					int pz = pos.getZ();
+
+					if (xmin < px && px < xmax) {
+						if (zmin < pz && pz < zmax) {
+							return true;
+						}
+					}
+				}
+		}
+
+
+		return false;
+
+	}
+
+	public boolean isPlayerInTowerRadius(EntityPlayer p){
+		if(isPosInTowerRadius(p.worldObj, p.getPosition())){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	public int getManhattanDistanceToNearestTower(int dimID, BlockPos pos){
+		int distance = Integer.MAX_VALUE;
+		for(TowerTileEntity t : getPoweredTowers()){
+			if(dimID==t.getWorld().provider.getDimensionId()){
+				BlockPos tpos = t.getPos();
+				int dis = EffectHelper.getManhattanDistance((int)tpos.getX(), (int)tpos.getZ(), (int)pos.getX(), (int)pos.getZ());
+				distance = (int) (dis<distance ? dis : distance);
+			}
+		}
+		//System.out.println("distance is: "+distance);
 		return distance;
 	}
 	
@@ -275,5 +336,26 @@ public class DarkLists {
 	
 	public void clearTowerList(){
 		this.poweredTowers= new HashSet<TowerTileEntity>();
+	}
+	
+	public boolean inDarkness(World w, BlockPos pos){
+		//players with orb
+		if(Darkness.darkLists.getPlayersWithOrb().isEmpty()==false
+				&& Darkness.darkLists.getDistanceToNearestPlayerWithOrb(w,pos) <= HELD_ORB_RADIUS){
+			return false;
+		}
+		//orb detonations
+		else if(Darkness.darkLists.getOrbDetonations().isEmpty()==false
+				&& Darkness.darkLists.getDistanceToNearestOrbDetonation(w,pos)<= ORB_DETONATION_RAIDUS){
+			return false;
+			
+		}
+		//tower
+		else if(Darkness.darkLists.getPoweredTowers().isEmpty()==false
+				&& Darkness.darkLists.isPosInTowerRadius(w, pos)){
+			return false;
+		}
+		return true;
+		
 	}
 }
