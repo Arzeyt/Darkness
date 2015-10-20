@@ -1,0 +1,5 @@
+spawn point tower
+fog distance render
+perfect placement marker
+selective border rendering
+spectral mode

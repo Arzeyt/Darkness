@@ -1,7 +1,12 @@
 {
-"bell": {"category": "master","sounds": ["bell"]},
-"bellLong": {"category": "master","sounds": ["bellLong"]},
-"teleWhoosh": {"category": "master","sounds": ["teleWhoosh"]},
-"whoosh": {"category": "master","sounds": ["whoosh"]},
-"whooshPuff": {"category": "master","sounds": ["whooshPuff"]}
+  "bell": {"category": "master","sounds": ["bell"]},
+  "bellLong": {"category": "master","sounds": ["bellLong"]},
+  "teleWhoosh": {"category": "master","sounds": ["teleWhoosh"]},
+  "whoosh": {"category": "master","sounds": ["whoosh"]},
+  "whooshPuff": {"category": "master","sounds": ["whooshPuff"]},
+  "breath": {"category": "master","sounds": ["breath"]},
+  "sustainedBell": {"category": "master","sounds": ["sustainedBell"]},
+  "chimes": {"category": "master","sounds": ["chimes"]},
+  "meow": {"category": "master","sounds": ["meow"]}
+
 }

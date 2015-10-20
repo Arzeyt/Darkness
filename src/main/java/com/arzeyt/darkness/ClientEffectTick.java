@@ -5,11 +5,14 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.eventbus.Subscribe;
 
+import com.sun.deploy.util.SessionState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.GameRules;
+import net.minecraftforge.client.event.EntityViewRenderEvent;
+import net.minecraftforge.client.event.EntityViewRenderEvent.FogDensity;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
@@ -78,12 +81,10 @@ public class ClientEffectTick {
 		
 	}
 
-	@SubscribeEvent
+	//cannot simply keep setting time to night client side
 	public void nightRender(ClientTickEvent e){
 		if(e.side==Side.CLIENT && Minecraft.getMinecraft().theWorld!=null){
 			if(Darkness.darkLists.isPlayerInTowerRadius(Minecraft.getMinecraft().thePlayer)==false) {
-				System.out.println("towers in list: " + Darkness.darkLists.getPoweredTowers().size());
-				Minecraft.getMinecraft().theWorld.setWorldTime(18000);
 
 			}
 		}
@@ -109,4 +110,6 @@ public class ClientEffectTick {
 			}
 		}
 	}
+
+
 }

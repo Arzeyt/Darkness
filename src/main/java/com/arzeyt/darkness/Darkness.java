@@ -23,9 +23,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
@@ -34,12 +32,10 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 
 @Mod(modid = Darkness.MODID, version = Darkness.VERSION)
@@ -123,6 +119,9 @@ public class Darkness {
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
+		//Events
+		FMLCommonHandler.instance().bus().register(new DarkTick());
+		MinecraftForge.EVENT_BUS.register(new DarkEventHandler());
     	
     	if(event.getSide() == Side.CLIENT){ //client side stuff
 	    	RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
@@ -142,14 +141,13 @@ public class Darkness {
 	
 	    	//Events
 		    	FMLCommonHandler.instance().bus().register(new ClientEffectTick());
+				MinecraftForge.EVENT_BUS.register(new ClientEffectEventHandler());
 
 	    	//classes
 		    	this.clientLists=new ClientLists();
     	}
     	
-    	//Events
-    	FMLCommonHandler.instance().bus().register(new DarkDeterminerServerTick());
-    	MinecraftForge.EVENT_BUS.register(new DarkEventHandler());
+
     }
     
     @EventHandler

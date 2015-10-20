@@ -37,4 +37,6 @@ public final class Reference {
 	public static final int EVASION_RADIUS = 15;
 
 
+	public static final int MOB_SPAWN_RATE = 40*1;
+	public static final int EVASION_CHECK_RATE = 20*5;
 }

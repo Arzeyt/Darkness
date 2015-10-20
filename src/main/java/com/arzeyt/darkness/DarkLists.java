@@ -8,6 +8,7 @@ import com.arzeyt.darkness.lightOrb.Detonation;
 import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
+import jdk.nashorn.internal.ir.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -172,13 +173,21 @@ public class DarkLists {
 	}
 	
 	public void addPlayersInDarkness(EntityPlayer p){
-		playersInDarkness.add(p);
+		if(playersInDarkness.contains(p)){
+			if(p.worldObj.isRemote==false){
+				p.worldObj.playSoundAtEntity(p,"darkness:breath",1.0F,1.0F);
+			}
+		}else {
+			playersInDarkness.add(p);
+		}
 	}
 	
 	public void removePlayerInDarkness(EntityPlayer p){
 		if(getPlayersInDarkness().contains(p)){
-			System.out.println("remove "+p.getDisplayNameString()+" from darkness list");
 			playersInDarkness.remove(p);
+			if(p.worldObj.isRemote==false){
+				p.worldObj.playSoundAtEntity(p,"darkness:chimes",1.0F,1.0F);
+			}
 		}
 	}
 	
@@ -241,13 +250,7 @@ public class DarkLists {
 		int distance = Integer.MAX_VALUE;
 		for(TowerTileEntity t : getPoweredTowers()){
 			if(dimID==t.getWorld().provider.getDimensionId()){
-				List positions = (List) t.getPos().getAllInBox(new BlockPos(t.getPos().getX()- TOWER_RADIUS,0, t.getPos().getZ()- TOWER_RADIUS), new BlockPos(t.getPos().getX()+ TOWER_RADIUS, 256, t.getPos().getZ()+ TOWER_RADIUS));
-				if(positions.contains(pos)){
-					
-					
-				
-				}
-						BlockPos tpos = t.getPos();
+				BlockPos tpos = t.getPos();
 				int dis = (int) Math.hypot((int)pos.getX()-(int)tpos.getX(), (int)pos.getZ()-(int)tpos.getZ());
 				distance = (int) (dis<distance ? dis : distance);
 			}
@@ -255,6 +258,20 @@ public class DarkLists {
 		//System.out.println("distance is: "+distance);
 		return distance;
 	}
+
+	public double getDistanceToNearestTowerDouble(int dimID, BlockPos pos){
+		double distance = Integer.MAX_VALUE;
+		for(TowerTileEntity t : getPoweredTowers()){
+			if(dimID==t.getWorld().provider.getDimensionId()){
+				BlockPos tpos = t.getPos();
+				double dis =  Math.hypot(pos.getX()-tpos.getX(), pos.getZ()-tpos.getZ());
+				distance = (int) (dis<distance ? dis : distance);
+			}
+		}
+		//System.out.println("distance is: "+distance);
+		return distance;
+	}
+
 	
 	public boolean isPosInTowerRadius(World w, BlockPos pos){
 			for(TowerTileEntity t : getPoweredTowers()){

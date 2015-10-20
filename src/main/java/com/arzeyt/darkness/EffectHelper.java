@@ -17,6 +17,8 @@ import net.minecraft.world.World;
 
 public class EffectHelper {
 
+	static Random rand = new Random();
+
 	public static void teleportRandomly(EntityLiving e, int range){
 		BlockPos pos = getRandomGroundPos(e.worldObj, e.getPosition(), range);
 		e.setPosition(pos.getX(), pos.getY(), pos.getZ());
@@ -33,7 +35,6 @@ public class EffectHelper {
 	 * @Warning can result in infinite loop if there are no ground blocks in range!
 	 */
 	public static BlockPos getRandomGroundPos(World w, BlockPos p, int range){
-		Random rand = new Random();
 		int x = (rand.nextInt(range*2)-range)+p.getX();
 		int y = p.getY();
 		int z = (rand.nextInt(range*2)-range)+p.getZ();

@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import ibxm.Player;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.state.IBlockState;
@@ -31,13 +32,15 @@ import net.minecraftforge.event.entity.player.EntityInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.BlockEvent.BreakEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
 import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerBlock;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
-import com.ibm.icu.util.BytesTrie.Result;
+
+import static net.minecraftforge.fml.common.eventhandler.Event.*;
 
 public class DarkEventHandler {
 
@@ -88,7 +91,7 @@ public class DarkEventHandler {
 				ItemStack stack = e.entityPlayer.inventory.getCurrentItem();
 				//item is block
 				if(Block.getBlockFromItem(stack.getItem())!=null){
-					e.useItem=net.minecraftforge.fml.common.eventhandler.Event.Result.DENY;
+					e.useItem= Result.DENY;
 					Darkness.simpleNetworkWrapper.sendTo(new FXMessageToClient(Reference.FX_BLOCK, e.pos.getX(),e.pos.getY()+1,e.pos.getZ()),(EntityPlayerMP) e.entityPlayer);
 					e.world.playSoundAtEntity(e.entityPlayer, "darkness:whooshPuff", 1.2F, 1.0F);
 				}
@@ -113,7 +116,7 @@ public class DarkEventHandler {
 			Darkness.darkLists.removeLightOrb(orb);
 			Darkness.darkLists.addNewOrbDetonation(e.entity.worldObj, pos);
 			Darkness.simpleNetworkWrapper.sendToDimension(new DetonationMessageToClient(true, pos.getX(), pos.getY(), pos.getZ()), e.entityItem.dimension);
-			e.entity.worldObj.playSoundAtEntity(e.entity, "darkness:bellLong", 1.0F, 1.0F);
+			e.entity.worldObj.playSoundAtEntity(e.entity, "darkness:sustainedBell", 1.0F, 1.0F);
 
 			
 			//throw mobs and set them on fire. constant fire is handled in darkdeterminer
@@ -170,7 +173,7 @@ public class DarkEventHandler {
 	public void onEntityDamage(LivingAttackEvent e){
 		if(e.source.getEntity() instanceof EntityPlayer){
 			EntityPlayer p = (EntityPlayer) e.source.getEntity();
-			//telemob
+			//invincimob
 			if(e.entityLiving instanceof EntityMob){
 				EntityMob mob = (EntityMob) e.entityLiving;
 				//mob darkness check
@@ -211,6 +214,13 @@ public class DarkEventHandler {
 					p.addPotionEffect(new PotionEffect(9, 20*15, 1, false, true));
 				}
 			}
+		}else if (e.entityLiving instanceof EntityMob) {
 		}
+	}
+
+	@SubscribeEvent
+	public void meow(PlayerInteractEvent e){
+		Random rand = new Random();
+		e.world.playSoundAtEntity(e.entityPlayer, "darkness:meow", 1.0F, 0.5F+rand.nextFloat());
 	}
 }

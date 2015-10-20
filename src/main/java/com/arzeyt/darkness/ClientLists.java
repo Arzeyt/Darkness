@@ -13,6 +13,7 @@ public class ClientLists {
 
 	//accessed every tick to see where to render detonations. The server should modify this list via packets.
 	private HashSet<BlockPos> detonations = new HashSet<BlockPos>();
+	public boolean renderDarkness = false;
 	
 	public HashSet<BlockPos> getDetonations() {
 		return detonations;

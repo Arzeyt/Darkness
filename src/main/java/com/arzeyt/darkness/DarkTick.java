@@ -1,14 +1,14 @@
 package com.arzeyt.darkness;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.PotionEffect;
@@ -27,7 +27,7 @@ import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.lightOrb.OrbUpdateMessageToClient;
 import com.sun.xml.internal.stream.Entity;
 
-public class DarkDeterminerServerTick {
+public class DarkTick {
 
 	private int counter = 1;
 	
@@ -76,7 +76,7 @@ public class DarkDeterminerServerTick {
 				}
 			//detonations
 				else if(Darkness.darkLists.getOrbDetonations().isEmpty()==false
-						&& Darkness.darkLists.isPlayerInTowerRadius(player)){
+						&& Darkness.darkLists.getDistanceToNearestOrbDetonation(player)<=ORB_DETONATION_RAIDUS){
 					Darkness.darkLists.removePlayerInDarkness(player);
 					//System.out.println(player.getName()+" is near orb detonation");
 				}
@@ -151,7 +151,8 @@ public class DarkDeterminerServerTick {
 	public void detonationDepletion(ServerTickEvent e){
 		if(Darkness.darkLists.getOrbDetonations().isEmpty()==false){
 			HashSet<Detonation> toRemove = new HashSet<Detonation>();
-			
+
+			//
 			for(Detonation d : Darkness.darkLists.getOrbDetonations()){
 				if(d.lifeRemaining<=0){
 					toRemove.add(d);
@@ -175,6 +176,7 @@ public class DarkDeterminerServerTick {
 				while(it.hasNext()){
 					EntityMob mob = (EntityMob) it.next();
 					if(Darkness.darkLists.getDistanceToNearestOrbDetonation(mob.worldObj, mob.getPosition())<=r){
+						mob.fireResistance=0;
 						mob.setFire(1);
 					}
 				}
@@ -200,7 +202,7 @@ public class DarkDeterminerServerTick {
 				
 				//potion effect
 				if(Darkness.darkLists.isPlayerInDarkness(player)){
-					player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE+20, 0, false, false));
+					player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE+20, 1, false, false));
 				}else{
 					player.removePotionEffect(2);
 				}
@@ -215,41 +217,57 @@ public class DarkDeterminerServerTick {
 						&& Darkness.darkLists.getPlayersWithOrb().contains(player)){
 					Darkness.darkLists.removePlayerWithOrb(player);
 				}
-				
-				
+
+
 			}
 		}
 	}
-	
-	//more fail
-	public void playerEffectPlayerTick(PlayerTickEvent e){
-		//evasive animals. null pointer wierdness. wont work in server tick, nor player tick apparently. Maybe world tick?
-		
-		int er = Reference.EVASION_CHECK_RADIUS;
-		BlockPos ppos = e.player.playerLocation;
-		List animals = e.player.worldObj.getEntitiesWithinAABB(EntityAnimal.class, AxisAlignedBB.fromBounds((double)ppos.getX()-er, (double)ppos.getY()-er,(double) ppos.getZ()-er, (double)ppos.getX()+er,(double) ppos.getY()+er, (double)ppos.getZ()+er));
-		Iterator pit = animals.iterator();
-		while(pit.hasNext()){
-			EntityAnimal ani = (EntityAnimal) pit.next();
-			EffectHelper.teleportRandomly(ani, Reference.EVASION_RADIUS);
-			System.out.println("teleported animal");
+
+	//probably need a more advanced mob spawner
+	public int darkMobSpawn=0;
+	Random rand = new Random();
+	HashSet<EntityMob> mobs = new HashSet<EntityMob>();
+
+	@SubscribeEvent
+	public void darkMobSpawn(ServerTickEvent e){
+		if(counter%Reference.MOB_SPAWN_RATE==0
+				&& darkMobSpawn>=0){
+			System.out.println("dark mob spawn: "+darkMobSpawn);
+			ArrayList list = (ArrayList) MinecraftServer.getServer().getConfigurationManager().playerEntityList;
+			Iterator iterator = list.iterator();
+			while(iterator.hasNext()) {
+				EntityPlayer player = (EntityPlayer) iterator.next();
+				WorldServer world = MinecraftServer.getServer().worldServerForDimension(player.dimension);
+				BlockPos ppos = player.getPosition();
+				if(ppos==null)return;
+
+				if(Darkness.darkLists.isPlayerInTowerRadius(player)==false){
+					EntityZombie zombie = new EntityZombie(world);
+					BlockPos zloc = EffectHelper.getRandomGroundPos(world, ppos, 10);
+					if(zloc==null)return;
+					zombie.setPosition(zloc.getX(), zloc.getY(), zloc.getZ());
+					world.spawnEntityInWorld(zombie);
+					zombie.setAttackTarget(player);
+					zombie.setCurrentItemOrArmor(4, new ItemStack(Item.getByNameOrId("leather_helmet")));
+					zombie.deathTime=20*20;
+					Darkness.simpleNetworkWrapper.sendToAll(new FXMessageToClient(Reference.FX_VANISH, zloc.getX(), zloc.getY(), zloc.getZ()));
+					world.playSoundAtEntity(zombie, "darkness:teleWhoosh", 1.0F, 1.0F);
+					darkMobSpawn--;
+				}
+
+			}
+		}else if(counter%Reference.MOB_SPAWN_RATE*100==0){
+			//darkMobSpawn++;
 		}
 	}
-	
-	//fail
-	public void testa(WorldTickEvent e){
-		ArrayList list = (ArrayList) MinecraftServer.getServer().getConfigurationManager().playerEntityList;
-		Iterator iterator = list.iterator();
-		while(iterator.hasNext())
-		{
-			EntityPlayerMP player = (EntityPlayerMP) iterator.next();
-			WorldServer world = MinecraftServer.getServer().worldServerForDimension(player.dimension);
-			
+	//more fail
+	public void playerEffectPlayerTick(PlayerTickEvent e){
+		if(counter%Reference.EVASION_CHECK_RATE==0) {
 			int er = Reference.EVASION_CHECK_RADIUS;
-			BlockPos ppos = player.playerLocation;
-			List animals = world.getEntitiesWithinAABBExcludingEntity(player, player.getBoundingBox().expand(er,er,er));
+			BlockPos ppos = e.player.getPosition();
+			List animals = e.player.worldObj.getEntitiesWithinAABB(EntityAnimal.class, AxisAlignedBB.fromBounds((double) ppos.getX() - er, (double) ppos.getY() - er, (double) ppos.getZ() - er, (double) ppos.getX() + er, (double) ppos.getY() + er, (double) ppos.getZ() + er));
 			Iterator pit = animals.iterator();
-			while(pit.hasNext()){
+			while (pit.hasNext()) {
 				EntityAnimal ani = (EntityAnimal) pit.next();
 				EffectHelper.teleportRandomly(ani, Reference.EVASION_RADIUS);
 				System.out.println("teleported animal");
