@@ -120,10 +120,11 @@ public class Darkness {
     public void init(FMLInitializationEvent event)
     {
 		//Events
-		FMLCommonHandler.instance().bus().register(new DarkTick());
-		MinecraftForge.EVENT_BUS.register(new DarkEventHandler());
+		FMLCommonHandler.instance().bus().register(new DarkEventHandlerFML());
+		FMLCommonHandler.instance().bus().register(new MobSpawner());
+		MinecraftForge.EVENT_BUS.register(new DarkEventHandlerMinecraftForge());
     	
-    	if(event.getSide() == Side.CLIENT){ //client side stuff
+    	if(event.getSide() == Side.CLIENT){ //client side stuff. screw proxies.
 	    	RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
 	    
 	    	if(debugMode==true){
@@ -162,7 +163,9 @@ public class Darkness {
     
     @EventHandler
     public void serverStop(FMLServerStoppingEvent e){
-    	darkLists.clearTowerList();
+
+		darkLists.clearTowerList();
+		clientLists.clearTowerList();
     }
 }
 

@@ -25,7 +25,7 @@ public class LightOrbBlock extends Block {
 		GameRegistry.registerBlock(this, name);
 		this.setUnlocalizedName(Darkness.MODID+"_"+name);
 		
-		setCreativeTab(Darkness.darknessTab);
+		//setCreativeTab(Darkness.darknessTab);
 		setLightLevel(0.8f);
 		setBlockBounds(0.3f, 0.0f, 0.3f, 0.6f, 0.3f, 0.6f);
 	}

@@ -36,6 +36,7 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 		setLightLevel(1.0f);
 		setBlockBounds(0f, 0f, 0f, 1f, 2f, 1f);
 		isBlockContainer=true;
+		setHardness(3F);
 		
 	}
 	
@@ -109,6 +110,9 @@ public class TowerBlock extends Block implements ITileEntityProvider{
 			IBlockState state) {
 		if(Darkness.darkLists.getPoweredTowers().contains((TowerTileEntity)worldIn.getTileEntity(pos))){
 			Darkness.darkLists.removePoweredTower((TowerTileEntity) worldIn.getTileEntity(pos));
+		}
+		if(Darkness.clientLists.getPoweredTowers().contains((TowerTileEntity)worldIn.getTileEntity(pos))){
+			Darkness.clientLists.removePoweredTower((TowerTileEntity) worldIn.getTileEntity(pos));
 		}
 		super.onBlockDestroyedByPlayer(worldIn, pos, state);
 	}

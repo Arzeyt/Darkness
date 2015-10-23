@@ -1,5 +1,13 @@
 spawn point tower
+other player light orb render
 fog distance render
-perfect placement marker
+perfect orb placement marker
 selective border rendering
 spectral mode
+	^player dies and is added to dark list
+	^player can only interact with light towers, and draws power from a fully charge tower, resurrecting the player
+	?fancy damage system with spectral power being used to damage things- hunger
+	item to allow for right click air events
+light weapons
+advanced mob spawning
+dark attack towers

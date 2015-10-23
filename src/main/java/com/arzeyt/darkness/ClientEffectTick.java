@@ -1,23 +1,19 @@
 package com.arzeyt.darkness;
 
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
-import com.google.common.eventbus.Subscribe;
-
-import com.sun.deploy.util.SessionState;
+import com.arzeyt.darkness.lightOrb.LightOrb;
+import jdk.nashorn.internal.ir.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.MathHelper;
-import net.minecraft.world.GameRules;
-import net.minecraftforge.client.event.EntityViewRenderEvent;
-import net.minecraftforge.client.event.EntityViewRenderEvent.FogDensity;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import scala.collection.parallel.ParIterableLike;
+
+import java.util.HashSet;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * somehow being registered server side...
@@ -27,6 +23,7 @@ public class ClientEffectTick {
 
 	private final int DETONATION_TICK_RATE = Reference.DETONATION_EFFECT_TICK_RATE;
 	private int counter=0;
+	Random rand = new Random();
 	
 	@SubscribeEvent
 	public void detonationEffect(ClientTickEvent e){
@@ -92,22 +89,41 @@ public class ClientEffectTick {
 
 
 
-	//no way to get if pos is in darkness client side...yet.
-	public void ambientSmokeSparkleEffect(ClientTickEvent e){
-		BlockPos pos = Minecraft.getMinecraft().thePlayer.getPosition();
-		int radius=5;
-		int height=2;
-		int spawnChance = 30;
-		Random rand = new Random();
+	@SubscribeEvent
+	public void atmosphereTick(ClientTickEvent e){
+		if(counter%Reference.ATMOSPHERE_TICK==0) {
+			if (Minecraft.getMinecraft().theWorld == null) {
+				return;
+			}
+			BlockPos pos = Minecraft.getMinecraft().thePlayer.getPosition();
+			int radius = 7;
+			int height = 3;
+			int spawnChance = 5;
 
-		for(int i=-radius; i<radius; i++){
-			for(int j=-height; j<height; j++){
-				for(int k=-radius; k<radius; k++){
-					if(rand.nextInt()<=spawnChance){
-						Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+i, pos.getY()+j, pos.getZ()+k, 0.0D, 0.5D, 0.0D);
+
+			for (int i = -radius; i < radius; i++) {
+				for (int j = -height; j < height; j++) {
+					for (int k = -radius; k < radius; k++) {
+						if (rand.nextInt(100) <= spawnChance) {
+							double x=pos.getX()+i+rand.nextDouble();
+							double y=pos.getY()+j+rand.nextDouble();
+							double z=pos.getZ()+k+rand.nextDouble();
+							if (Darkness.clientLists.isPosInTowerRadius(Minecraft.getMinecraft().theWorld, new BlockPos(x,y,z))) {
+								//Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x,y,z, 0.0D, 0.1D, 0.0D);
+							}else if(Minecraft.getMinecraft().thePlayer.getHeldItem()!=null
+									&& Minecraft.getMinecraft().thePlayer.getHeldItem().getItem() instanceof LightOrb
+									&& Darkness.clientLists.isPosInTowerRadiusX2minus1(Minecraft.getMinecraft().theWorld, new BlockPos(x,y,z))==false){
+								Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.VILLAGER_HAPPY, x,y,z, 0.0D, 0.0D, 0.0D);
+							}else if(Darkness.clientLists.isPosInTowerRadiusPlus1(Minecraft.getMinecraft().theWorld, new BlockPos(x,y,z))){
+								Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, x, y, z, 0.0D, 0.5D, 0.0D);
+							}else {
+								Minecraft.getMinecraft().theWorld.spawnParticle(EnumParticleTypes.SMOKE_NORMAL, x, y, z, 0.0D, 0.03D, 0.0D);
+							}
+						}
 					}
 				}
 			}
+
 		}
 	}
 

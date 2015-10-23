@@ -97,7 +97,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 			if(counter%r.TOWER_DEPLETION_RATE==0
 					&& timeOfDay < r.TOWER_DEPLETE_END_TIME
 					&& timeOfDay> r.TOWER_DEPLETE_START_TIME
-					&& power>0){
+					&& power>=1){
 				System.out.println("decrementing power");
 					setPower(getPower()-1);
 			}
@@ -131,7 +131,10 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				double randZ = rand.nextInt((int) (adjustedTowerRadius*2))-adjustedTowerRadius;
 				this.getWorld().spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX()+.5+randX, rand.nextInt(256), pos.getZ()+randZ+.5, 0.0D, 0.1D, 0.0D);
 			}**/
-			
+
+
+			//border effect
+			/**
 			if(doBorderEffect==false
 					&&power>0){
 				doBorderEffect=true;
@@ -146,7 +149,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 					&&counter%borderConstructRate==0){
 				borderEffectRender();
 			}
-		
+			**/
 		}
 		
 		
@@ -166,7 +169,7 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 		if(magicBlock.getX()==0){
 			magicBlock=pos;
 		}
-		int i = rand.nextInt(3);
+		int i = rand.nextInt(4);
 		int x=magicBlock.getX();
 		int y=magicBlock.getY();
 		int z=magicBlock.getZ();
@@ -293,13 +296,13 @@ public class TowerTileEntity extends TileEntity implements IUpdatePlayerListBox{
 				return false;
 			}
 		}**/
-		if(getPower()==0){
+		if(getPower()<=1){
 			System.out.println("power too low to take orb");
 			return false;
 		}else{
 			ItemStack newOrb = generateLightOrb(p);
 			p.inventory.addItemStackToInventory(newOrb);
-			setPower(0);
+			setPower(1);
 			System.out.println("took orb");
 			return true;
 		}

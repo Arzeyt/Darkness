@@ -1,11 +1,9 @@
 package com.arzeyt.darkness;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import ibxm.Player;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.state.IBlockState;
@@ -15,9 +13,6 @@ import net.minecraft.entity.monster.EntitySpider;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.AxisAlignedBB;
@@ -28,11 +23,12 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.item.ItemExpireEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.player.EntityInteractEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.BlockEvent.BreakEvent;
-import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
-import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
@@ -40,9 +36,10 @@ import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerBlock;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
+import static com.arzeyt.darkness.MobSpawnerData.*;
 import static net.minecraftforge.fml.common.eventhandler.Event.*;
 
-public class DarkEventHandler {
+public class DarkEventHandlerMinecraftForge {
 
 	@SubscribeEvent
 	public void addOrbsFromInventories(EntityJoinWorldEvent e){
@@ -60,6 +57,7 @@ public class DarkEventHandler {
 	}
 	@SubscribeEvent
 	public void onTowerBreak(BreakEvent e){
+		if(e.world.isRemote)return;
 		if(e.world.getTileEntity(e.pos) instanceof TowerTileEntity){
 			TowerTileEntity te = (TowerTileEntity) e.world.getTileEntity(e.pos);
 			if(Darkness.darkLists.towerExists(te)){
@@ -71,7 +69,7 @@ public class DarkEventHandler {
 	
 	@SubscribeEvent
 	public void onDarkBlockBreak(BreakEvent e){
-		if(e.world.isRemote==true){return;}
+		if(e.world.isRemote) return;
 		EntityPlayer p = e.getPlayer();
 		BlockPos pos = e.pos;
 		if(Darkness.darkLists.inDarkness(e.world, e.pos)){
@@ -85,7 +83,6 @@ public class DarkEventHandler {
 	@SubscribeEvent
 	public void onBlockPlaceInDarkness(PlayerInteractEvent e){
 		if(e.entity.worldObj.isRemote)return;
-		System.out.println("player interact");
 		if(Darkness.darkLists.inDarkness(e.world, e.pos)){
 			if(e.entityPlayer.inventory.getCurrentItem()!=null){
 				ItemStack stack = e.entityPlayer.inventory.getCurrentItem();
@@ -118,15 +115,16 @@ public class DarkEventHandler {
 			Darkness.simpleNetworkWrapper.sendToDimension(new DetonationMessageToClient(true, pos.getX(), pos.getY(), pos.getZ()), e.entityItem.dimension);
 			e.entity.worldObj.playSoundAtEntity(e.entity, "darkness:sustainedBell", 1.0F, 1.0F);
 
-			
-			//throw mobs and set them on fire. constant fire is handled in darkdeterminer
+
+			//throw mobs and set them on fire. constant fire is handled in DarkEventHandlerFML
+			Random rand = new Random();
 			World w = e.entity.worldObj;
 			Reference r = new Reference();
 			List mobs = w.getEntitiesWithinAABB(EntityMob.class, AxisAlignedBB.fromBounds(pos.getX()-r.ORB_DETONATION_RAIDUS, pos.getY()-r.ORB_DETONATION_RAIDUS, pos.getZ()-r.ORB_DETONATION_RAIDUS, pos.getX()+r.ORB_DETONATION_RAIDUS, pos.getY()+r.ORB_DETONATION_RAIDUS, pos.getZ()+r.ORB_DETONATION_RAIDUS));
 			Iterator it = mobs.iterator();
 			while(it.hasNext()){
 				EntityMob mob = (EntityMob) it.next();
-				mob.setVelocity(0.0D, 1.5D, 0.0D);
+				mob.setVelocity(-0.5D+rand.nextDouble(), 1.5D, -0.5D+rand.nextDouble());
 				mob.setFire(10);
 				mob.attackEntityFrom(DamageSource.onFire, 10);
 			}
@@ -152,7 +150,7 @@ public class DarkEventHandler {
 				}
 				
 				
-				if(Darkness.darkLists.getDistanceToNearestTower(w.provider.getDimensionId(), pos)>(Reference.TOWER_RADIUS*2)){
+				if(Darkness.darkLists.isPosInTowerRadiusX2minus1(w, pos)==false){
 					if(w.getChunkFromBlockCoords(pos).getBlock(pos) instanceof TowerBlock){
 						//handled in towerblock class
 					}else if(w.getChunkFromBlockCoords(pos).getBlock(pos.getX(),pos.getY()+1,pos.getZ()) instanceof BlockAir
@@ -170,7 +168,8 @@ public class DarkEventHandler {
 	}
 	
 	@SubscribeEvent
-	public void onEntityDamage(LivingAttackEvent e){
+	public void onMobDamage(LivingAttackEvent e){
+		//player attack
 		if(e.source.getEntity() instanceof EntityPlayer){
 			EntityPlayer p = (EntityPlayer) e.source.getEntity();
 			//invincimob
@@ -193,6 +192,7 @@ public class DarkEventHandler {
 					e.setCanceled(true);
 				}
 			}
+			//player is attacked
 		}else if(e.entityLiving instanceof EntityPlayer){
 			EntityPlayer p = (EntityPlayer) e.entityLiving;
 			//all mobs
@@ -205,13 +205,13 @@ public class DarkEventHandler {
 				int value = rand.nextInt(2);
 				if(value==0)
 					//poison
-					p.addPotionEffect(new PotionEffect(19, 20*5, 1, false, true));
+					p.addPotionEffect(new PotionEffect(19, 20*5, 0, false, true));
 				else if(value==1){
 					//stronger poison
-					p.addPotionEffect(new PotionEffect(19, 20*5, 2, false, true));
+					p.addPotionEffect(new PotionEffect(19, 20*5, 1, false, true));
 					//nausea
 				}else if(value==2){
-					p.addPotionEffect(new PotionEffect(9, 20*15, 1, false, true));
+					p.addPotionEffect(new PotionEffect(9, 20*15, 0, false, true));
 				}
 			}
 		}else if (e.entityLiving instanceof EntityMob) {
@@ -221,6 +221,105 @@ public class DarkEventHandler {
 	@SubscribeEvent
 	public void meow(PlayerInteractEvent e){
 		Random rand = new Random();
-		e.world.playSoundAtEntity(e.entityPlayer, "darkness:meow", 1.0F, 0.5F+rand.nextFloat());
+		//e.world.playSoundAtEntity(e.entityPlayer, "darkness:meow", 1.0F, 0.5F+rand.nextFloat());
 	}
+
+	@SubscribeEvent
+	public void playerDeath(LivingDeathEvent e){
+		if(e.entityLiving.worldObj.isRemote)return;
+		if(e.entityLiving instanceof EntityPlayer){
+			EntityPlayer p = (EntityPlayer) e.entityLiving;
+			p.setSpawnPoint(p.getPosition(),true);
+			Darkness.darkLists.addDarkPlayer(p);
+		}
+	}
+
+	//cancels interactions with everything. Also resurrects on tower absorb
+	@SubscribeEvent
+	public void deadPlayerInteract(PlayerInteractEvent e){
+		System.out.println("interact = "+e.action.toString());
+		if(e.entityPlayer.worldObj.isRemote)return;
+		EntityPlayer p = e.entityPlayer;
+		if(Darkness.darkLists.isGhost(p)) {
+			if (e.action.equals(PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK)) {
+				if (p.getEntityWorld().getTileEntity(e.pos) != null
+						&& p.getEntityWorld().getTileEntity(e.pos) instanceof TowerTileEntity) {
+					TowerTileEntity t = (TowerTileEntity) p.getEntityWorld().getTileEntity(e.pos);
+					if (t.getPower() > 99) {
+						t.setPower(1);
+						p.setInvisible(false);
+						DPlayer.nbtSetGhost(p,false);
+						Darkness.darkLists.removeDarkPlayer(p);
+						Darkness.simpleNetworkWrapper.sendToAll(new FXMessageToClient(Reference.FX_OUTWARDS_SPARKLE, p.getPosition().getX(), p.getPosition().getY(), p.getPosition().getZ()));
+						p.worldObj.playSoundAtEntity(p,"darkness:bell",1.0F,1.2F);
+					}
+				}
+			}else if(e.action.equals(PlayerInteractEvent.Action.RIGHT_CLICK_AIR)){
+				System.out.println("right clicked air");
+				if(p.getFoodStats().getFoodLevel()>=6){
+					System.out.println("blink passed");
+					EffectHelper.blink(p);
+					p.getFoodStats().setFoodLevel(p.getFoodStats().getFoodLevel()-6);
+				}
+			}
+			e.setCanceled(true);
+		}
+	}
+
+	@SubscribeEvent
+	public void deadPlayerAttack(LivingHurtEvent e){
+		//player is attacking
+		if(e.source.getEntity() instanceof EntityPlayer){
+			EntityPlayer p = (EntityPlayer) e.source.getEntity();
+			if(Darkness.darkLists.isGhost(p)){//ghost
+				if(Darkness.darkLists.isPlayerInDarkness(p)) {//in darkness
+					EntityLiving entity = (EntityLiving) e.entityLiving;
+					entity.attackEntityFrom(DamageSource.magic, 0.5F);
+					e.setCanceled(true);
+
+				}else{//in light
+					if(e.entityLiving instanceof EntityPlayer==false){//not a player
+						e.entityLiving.attackEntityFrom(DamageSource.magic, 0.5F);
+						e.entityLiving.setFire(2);
+						e.setCanceled(true);
+					}else{//a player
+						e.entityLiving.attackEntityFrom(DamageSource.magic, 0.5F);
+						e.setCanceled(true);
+					}
+				}
+			}
+
+			//something attacking player
+		}else if(e.entityLiving instanceof EntityPlayer){
+			EntityPlayer p = (EntityPlayer) e.entityLiving;
+			if(Darkness.darkLists.isGhost(p)){
+				e.setCanceled(true);
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public void deadPlayerPickup(EntityItemPickupEvent e){
+		if(Darkness.darkLists.isGhost(e.entityPlayer)){
+			e.setCanceled(true);
+		}
+	}
+
+	@SubscribeEvent
+	public void deadTargetEvent(LivingSetAttackTargetEvent e){
+		if(e.entityLiving.worldObj.isRemote==true)return;
+		if(e.target instanceof  EntityPlayer){
+			if (Darkness.darkLists.isGhost((EntityPlayer) e.target)){
+				e.entityLiving.setRevengeTarget(null);
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public void darkMobDeath(LivingDeathEvent e){
+		if(e.entity.getEntityData().hasKey("darkness")){
+			mobs.remove(e.entityLiving);
+		}
+	}
+
 }

@@ -3,26 +3,29 @@ package com.arzeyt.darkness;
 import com.mojang.authlib.GameProfile;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 
 public class DPlayer{
 
-	private EntityPlayer p;
-	
-	public DPlayer(EntityPlayer p){
-		this.p=p;
+
+	public static void nbtSetGhost(EntityPlayer p, boolean isGhost){
+		if(p.getEntityData().hasKey("darkness")==false){
+			p.getEntityData().setTag("darkness", new NBTTagCompound());
+		}
+		NBTTagCompound nbt = p.getEntityData().getCompoundTag("darkness");
+		nbt.setBoolean("ghost", isGhost);
 	}
-	
-	public EntityPlayer getEntityPlayer(){
-		return p;
-	}
-	
-	public BlockPos getPosition(){
-		return p.getPosition();
-	}
-	
-	public String getName(){
-		return p.getDisplayNameString();
+
+	public static boolean isGhost(EntityPlayer p){
+		if(p.getEntityData().hasKey("darkness")) {
+			NBTTagCompound nbt = p.getEntityData().getCompoundTag("darkness");
+
+			return nbt.getBoolean(Reference.P_GHOST);
+		}else{
+			return false;
+		}
 	}
 }

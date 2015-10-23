@@ -47,12 +47,15 @@ public class FXMessageHandlerOnClient implements IMessageHandler<FXMessageToClie
 		System.out.println("processing FXMessageToClient client side");
 		BlockPos pos = message.getPos();
 		switch(message.getEffectID()){
-		case Reference.FX_VANISH:
-			vanishSmoke(worldClient, pos);
-			break;
-		case Reference.FX_BLOCK:
-			blockSmoke(worldClient, pos);
-			break;
+			case Reference.FX_VANISH:
+				vanishSmoke(worldClient, pos);
+				break;
+			case Reference.FX_BLOCK:
+				blockSmoke(worldClient, pos);
+				break;
+			case Reference.FX_OUTWARDS_SPARKLE:
+				outwardsSparkle(worldClient, pos);
+
 		}
 		
 	}
@@ -73,6 +76,17 @@ public class FXMessageHandlerOnClient implements IMessageHandler<FXMessageToClie
 		for(int i=0; i<10; i++){
 			w.spawnParticle(EnumParticleTypes.SMOKE_LARGE, pos.getX(), pos.getY(), pos.getZ(), -0.5D+rand.nextFloat(),-0.5D+rand.nextFloat(), -0.5D+rand.nextFloat());
 		}
+	}
+
+	public void outwardsSparkle(WorldClient w, BlockPos pos){
+		for(float x=0; x<=2 ; x=x+0.5F){
+			for(float y=0; y<=2 ; y=y+0.5F){
+				for(float z=0; z<=2 ; z=z+0.5F){
+					w.spawnParticle(EnumParticleTypes.FIREWORKS_SPARK, pos.getX(), pos.getY(), pos.getZ(), -1.0D+x, -1.0D+y, -1.0D+z);
+				}
+			}
+		}
+
 	}
 
 }

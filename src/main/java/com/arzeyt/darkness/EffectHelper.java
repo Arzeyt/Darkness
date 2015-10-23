@@ -12,7 +12,10 @@ import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
 import net.minecraft.block.BlockAir;
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.BlockPos;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
 public class EffectHelper {
@@ -85,9 +88,8 @@ public class EffectHelper {
 				closestY=ground;
 			}
 		}
-		
-		BlockPos groundPos = new BlockPos(p.getX(), closestY+1, p.getZ());
-		return groundPos;
+
+		return new BlockPos(p.getX(), closestY+1, p.getZ());
 	}
 	
 	public static List<Point2D> getPointsAlongLine(double x1, double z1, double x2, double z2){
@@ -109,5 +111,27 @@ public class EffectHelper {
 		return disx+disz;
 		
 		
+	}
+
+	public static void blink(EntityPlayer player) {
+		MovingObjectPosition target = player.rayTrace(300, 1F);
+		double i;
+		double j;
+		double k;
+		float r = 3;
+		if (target != null) {
+			if (target.entityHit != null) {
+				i = target.entityHit.posX;
+				j = target.entityHit.posY;
+				k = target.entityHit.posZ;
+			} else {
+				i = target.getBlockPos().getX();
+				j = target.getBlockPos().getY();
+				k = target.getBlockPos().getZ();
+
+			}
+			player.setPositionAndUpdate(i, j, k);
+			System.out.println("teled");
+		}
 	}
 }

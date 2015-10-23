@@ -2,10 +2,8 @@ package com.arzeyt.darkness;
 
 import java.util.*;
 
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntityZombie;
-import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -17,24 +15,23 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 
 import com.arzeyt.darkness.lightOrb.Detonation;
 import com.arzeyt.darkness.lightOrb.DetonationMessageToClient;
 import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.lightOrb.OrbUpdateMessageToClient;
-import com.sun.xml.internal.stream.Entity;
 
-public class DarkTick {
+import static net.minecraftforge.fml.common.gameevent.PlayerEvent.*;
+
+public class DarkEventHandlerFML {
 
 	private int counter = 1;
 	
 	Reference r = new Reference();
 	
 	//40 since it's called twice. Counter increments 2 times faster than normal
-	private final int DARKNESS_CHECK_RATE = r.DARKNESS_CHECK_RATE;
+	private final int DARKNESS_CHECK_RATE = Reference.DARKNESS_CHECK_RATE;
 	private final int ORB_DEPLETION_RATE = r.ORB_DEPLETETION_RATE;
 	private final int TOWER_RADIUS=r.TOWER_RADIUS;
 	private final int HELD_ORB_RADIUS=r.HELD_ORB_RADIUS;
@@ -201,12 +198,29 @@ public class DarkTick {
 				BlockPos ppos = player.playerLocation;
 				
 				//potion effect
-				if(Darkness.darkLists.isPlayerInDarkness(player)){
-					player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE+20, 1, false, false));
-				}else{
-					player.removePotionEffect(2);
+				if(Darkness.darkLists.isPlayerInTowerRadius(player)==false){
+					if(Darkness.darkLists.isGhost(player)) {
+						player.removePotionEffect(16);
+						player.removePotionEffect(23);
+						player.removePotionEffect(1);
+						player.removePotionEffect(8);
+					}else if(player.getHeldItem() != null
+						&& player.getHeldItem().getItem() instanceof LightOrb){
+						player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE, 2, false, false));
+					}else{
+						player.addPotionEffect(new PotionEffect(2, DARKNESS_CHECK_RATE, 1, false, false));
+
+					}
+				}else {//in light
+					if (Darkness.darkLists.isGhost(player)) {
+						player.addPotionEffect(new PotionEffect(16, DARKNESS_CHECK_RATE, 0, false, false));
+						player.addPotionEffect(new PotionEffect(23, DARKNESS_CHECK_RATE, 0, false, false));
+						player.addPotionEffect(new PotionEffect(1, DARKNESS_CHECK_RATE, 0, false, false));
+						player.addPotionEffect(new PotionEffect(8, DARKNESS_CHECK_RATE, 1, false, false));//jump
+					} else {
+						player.removePotionEffect(2);
+					}
 				}
-		
 				//update held orb list (doesn't really belong here...)
 				ItemStack stack = player.getHeldItem();
 				if(stack !=null 
@@ -218,60 +232,42 @@ public class DarkTick {
 					Darkness.darkLists.removePlayerWithOrb(player);
 				}
 
-
-			}
-		}
-	}
-
-	//probably need a more advanced mob spawner
-	public int darkMobSpawn=0;
-	Random rand = new Random();
-	HashSet<EntityMob> mobs = new HashSet<EntityMob>();
-
-	@SubscribeEvent
-	public void darkMobSpawn(ServerTickEvent e){
-		if(counter%Reference.MOB_SPAWN_RATE==0
-				&& darkMobSpawn>=0){
-			System.out.println("dark mob spawn: "+darkMobSpawn);
-			ArrayList list = (ArrayList) MinecraftServer.getServer().getConfigurationManager().playerEntityList;
-			Iterator iterator = list.iterator();
-			while(iterator.hasNext()) {
-				EntityPlayer player = (EntityPlayer) iterator.next();
-				WorldServer world = MinecraftServer.getServer().worldServerForDimension(player.dimension);
-				BlockPos ppos = player.getPosition();
-				if(ppos==null)return;
-
-				if(Darkness.darkLists.isPlayerInTowerRadius(player)==false){
-					EntityZombie zombie = new EntityZombie(world);
-					BlockPos zloc = EffectHelper.getRandomGroundPos(world, ppos, 10);
-					if(zloc==null)return;
-					zombie.setPosition(zloc.getX(), zloc.getY(), zloc.getZ());
-					world.spawnEntityInWorld(zombie);
-					zombie.setAttackTarget(player);
-					zombie.setCurrentItemOrArmor(4, new ItemStack(Item.getByNameOrId("leather_helmet")));
-					zombie.deathTime=20*20;
-					Darkness.simpleNetworkWrapper.sendToAll(new FXMessageToClient(Reference.FX_VANISH, zloc.getX(), zloc.getY(), zloc.getZ()));
-					world.playSoundAtEntity(zombie, "darkness:teleWhoosh", 1.0F, 1.0F);
-					darkMobSpawn--;
+				//dark player invisible
+				if(Darkness.darkLists.isGhost(player)){
+					player.setInvisible(true);
+					player.addPotionEffect(new PotionEffect(14, DARKNESS_CHECK_RATE, 0, false, false));
 				}
 
 			}
-		}else if(counter%Reference.MOB_SPAWN_RATE*100==0){
-			//darkMobSpawn++;
 		}
 	}
-	//more fail
-	public void playerEffectPlayerTick(PlayerTickEvent e){
-		if(counter%Reference.EVASION_CHECK_RATE==0) {
-			int er = Reference.EVASION_CHECK_RADIUS;
-			BlockPos ppos = e.player.getPosition();
-			List animals = e.player.worldObj.getEntitiesWithinAABB(EntityAnimal.class, AxisAlignedBB.fromBounds((double) ppos.getX() - er, (double) ppos.getY() - er, (double) ppos.getZ() - er, (double) ppos.getX() + er, (double) ppos.getY() + er, (double) ppos.getZ() + er));
-			Iterator pit = animals.iterator();
-			while (pit.hasNext()) {
-				EntityAnimal ani = (EntityAnimal) pit.next();
-				EffectHelper.teleportRandomly(ani, Reference.EVASION_RADIUS);
-				System.out.println("teleported animal");
+
+
+
+
+	@SubscribeEvent
+	public void deadRespawn(PlayerRespawnEvent e){
+		if(e.player.worldObj.isRemote==true)return;
+		Darkness.darkLists.addDarkPlayer(e.player);
+		e.player.setInvisible(true);
+		DPlayer.nbtSetGhost(e.player, true);
+		BlockPos pos = e.player.getPosition();
+		int range = 10;
+		List mobs = e.player.worldObj.getEntitiesWithinAABB(EntityMob.class, AxisAlignedBB.fromBounds(pos.getX()-range, pos.getY()-range, pos.getZ()-range, pos.getX()+range, pos.getY()+range,pos.getZ()+range));
+		{
+			Iterator it = mobs.iterator();
+			while (it.hasNext()) {
+				EntityMob mob = (EntityMob) it.next();
+				mob.setAttackTarget(null);
+				mob.setRevengeTarget(null);
 			}
+		}
+	}
+
+	@SubscribeEvent
+	public void playerLogIn(PlayerLoggedInEvent e){
+		if(DPlayer.isGhost(e.player)){
+			Darkness.darkLists.addDarkPlayer(e.player);
 		}
 	}
 }

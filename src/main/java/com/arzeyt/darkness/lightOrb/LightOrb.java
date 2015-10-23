@@ -26,7 +26,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class LightOrb extends Item {
 
 	private final String itemName="lightOrb";
-	private final double DISSIPATION_TICKS = 16000;
+	private final double DISSIPATION_TICKS = 6000;
 	private final int UPDATE_RATE = 20;
 	
 	private int dissipationCounter;
@@ -144,7 +144,7 @@ public class LightOrb extends Item {
 		}else{
 			//debug info CLIENT ONLY
 			Reference r = new Reference();
-			NBTTagCompound nbt = (NBTTagCompound) itemStackIn.getTagCompound().getCompoundTag("darkness");
+			NBTTagCompound nbt = itemStackIn.getTagCompound().getCompoundTag("darkness");
 			System.out.println("------------------------------------------------------------------");
 			System.out.println("ID: "+nbt.getInteger(r.ID)+" Power: "+nbt.getInteger(r.POWER)+" DissipationP: "+nbt.getInteger(r.DISSIPATION_PERCENT));
 			System.out.println("orbs in list (lightOrb): "+Darkness.darkLists.getLightOrbs().size());

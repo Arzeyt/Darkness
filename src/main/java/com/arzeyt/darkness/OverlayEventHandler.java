@@ -27,7 +27,7 @@ public class OverlayEventHandler {
    * Note that you can entirely remove the vanilla rendering by cancelling the event here.
    */
 
-	  @SubscribeEvent(receiveCanceled=true)
+	  //@SubscribeEvent(receiveCanceled=true)
 	  public void onEvent(RenderGameOverlayEvent.Pre event) {
 	    EntityPlayerSP entityPlayerSP = Minecraft.getMinecraft().thePlayer;
 	    if (entityPlayerSP == null) return;  // just in case

@@ -1,5 +1,6 @@
 package com.arzeyt.darkness.towerObject;
 
+import com.arzeyt.darkness.Darkness;
 import com.arzeyt.darkness.effectObject.EffectMessageToServer;
 import com.arzeyt.darkness.effectObject.EffectTileEntity;
 
@@ -45,7 +46,9 @@ public class TowerMessageHandlerOnClient implements IMessageHandler<TowerMessage
 				&& worldClient.getTileEntity(message.getPos()).isInvalid()==false){
 			TowerTileEntity te = (TowerTileEntity) worldClient.getTileEntity(message.getPos());
 			te.setPower(power);
+			Darkness.clientLists.addPoweredTower(te);
 			System.out.println("Message processed. Set power to: "+power+" and the tile entity now has: "+te.getPower());
+			System.out.println("Tower is client list: "+ Darkness.clientLists.getPoweredTowers().size());
 		}
 	}
 

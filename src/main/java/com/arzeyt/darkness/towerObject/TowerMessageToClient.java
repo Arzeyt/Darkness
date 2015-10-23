@@ -47,7 +47,7 @@ public class TowerMessageToClient implements IMessage{
 	}
 	
 	public boolean isPowered() {
-		return power>0 ? true : false;
+		return power > 0;
 	}
 	
 	public boolean isMessageValid() {

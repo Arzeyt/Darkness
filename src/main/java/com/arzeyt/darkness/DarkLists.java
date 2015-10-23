@@ -2,13 +2,12 @@ package com.arzeyt.darkness;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 
 import com.arzeyt.darkness.lightOrb.Detonation;
 import com.arzeyt.darkness.lightOrb.LightOrb;
 import com.arzeyt.darkness.towerObject.TowerTileEntity;
 
-import jdk.nashorn.internal.ir.Block;
+import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -30,6 +29,7 @@ public class DarkLists {
 	private HashSet<Detonation> orbDetonations = new HashSet<Detonation>();
 	private HashSet<EntityPlayer> playersInDarkness = new HashSet<EntityPlayer>();
 	private HashSet<TowerTileEntity> poweredTowers = new HashSet<TowerTileEntity>();
+	private HashSet<EntityPlayer> darkPlayer = new HashSet<EntityPlayer>();
 	
 	//stores all player-held light orbs
 	
@@ -251,8 +251,8 @@ public class DarkLists {
 		for(TowerTileEntity t : getPoweredTowers()){
 			if(dimID==t.getWorld().provider.getDimensionId()){
 				BlockPos tpos = t.getPos();
-				int dis = (int) Math.hypot((int)pos.getX()-(int)tpos.getX(), (int)pos.getZ()-(int)tpos.getZ());
-				distance = (int) (dis<distance ? dis : distance);
+				int dis = (int) Math.hypot(pos.getX() - tpos.getX(), pos.getZ() - tpos.getZ());
+				distance = dis<distance ? dis : distance;
 			}
 		}
 		//System.out.println("distance is: "+distance);
@@ -298,12 +298,33 @@ public class DarkLists {
 
 	}
 
-	public boolean isPlayerInTowerRadius(EntityPlayer p){
-		if(isPosInTowerRadius(p.worldObj, p.getPosition())){
-			return true;
-		}else{
-			return false;
+	public boolean isPosInTowerRadiusX2minus1(World w, BlockPos pos){
+		for(TowerTileEntity t : getPoweredTowers()){
+			if(w.provider.getDimensionId()==t.getWorld().provider.getDimensionId()) {
+				int xmax = t.getPos().getX() + (TOWER_RADIUS*2-1);
+				int xmin = t.getPos().getX() - (TOWER_RADIUS*2-1);
+
+				int zmax = t.getPos().getZ() + (TOWER_RADIUS*2-1);
+				int zmin = t.getPos().getZ() - (TOWER_RADIUS*2-1);
+
+				int px = pos.getX();
+				int pz = pos.getZ();
+
+				if (xmin < px && px < xmax) {
+					if (zmin < pz && pz < zmax) {
+						return true;
+					}
+				}
+			}
 		}
+
+
+		return false;
+
+	}
+
+	public boolean isPlayerInTowerRadius(EntityPlayer p){
+		return isPosInTowerRadius(p.worldObj, p.getPosition());
 	}
 
 	public int getManhattanDistanceToNearestTower(int dimID, BlockPos pos){
@@ -311,8 +332,8 @@ public class DarkLists {
 		for(TowerTileEntity t : getPoweredTowers()){
 			if(dimID==t.getWorld().provider.getDimensionId()){
 				BlockPos tpos = t.getPos();
-				int dis = EffectHelper.getManhattanDistance((int)tpos.getX(), (int)tpos.getZ(), (int)pos.getX(), (int)pos.getZ());
-				distance = (int) (dis<distance ? dis : distance);
+				int dis = EffectHelper.getManhattanDistance(tpos.getX(), tpos.getZ(), pos.getX(), pos.getZ());
+				distance = dis<distance ? dis : distance;
 			}
 		}
 		//System.out.println("distance is: "+distance);
@@ -375,4 +396,27 @@ public class DarkLists {
 		return true;
 		
 	}
+
+	public HashSet<EntityPlayer> getDarkPlayers() {
+		return darkPlayer;
+	}
+
+	public void addDarkPlayer(EntityPlayer player){
+		if(isGhost(player)==false){
+			darkPlayer.add(player);
+			System.out.println("added dark player");
+		}
+	}
+
+	public void removeDarkPlayer(EntityPlayer p){
+		if(isGhost(p)){
+			darkPlayer.remove(p);
+			System.out.println("remove dark player");
+		}
+	}
+
+	public boolean isGhost(EntityPlayer p){
+		return getDarkPlayers().contains(p);
+	}
+
 }
